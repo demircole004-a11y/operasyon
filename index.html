@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFAD – Uluslararası İnsani Yardımlar · Sinematik Sunum Paneli</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{
+  --red:#C8102E; --navy:#1B2A4A; --navy2:#0f182b; --cream:#F5F3EE;
+  --muted:#9A9590; --border:rgba(15,13,11,0.1); --shadow:0 4px 24px rgba(15,13,11,0.14);
+  --gold:#ffd166;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;background:var(--navy2);color:#0F0D0B}
+.app{display:flex;height:100vh;width:100vw}
+.main{flex:1;position:relative;display:flex;flex-direction:column;min-width:0}
+
+/* ───────── NORMAL MOD: ÜST BAR ───────── */
+.topbar{position:absolute;top:14px;left:14px;right:14px;z-index:1000;background:rgba(255,255,255,.96);
+  padding:12px 20px;border-radius:10px;box-shadow:var(--shadow);display:flex;justify-content:space-between;
+  align-items:center;gap:12px;flex-wrap:wrap;border-left:5px solid var(--red)}
+.brand h1{font-family:'Bebas Neue',sans-serif;font-size:27px;color:var(--navy);letter-spacing:1px;line-height:1}
+.brand h1 span{color:var(--red)}
+.brand p{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;margin-top:2px}
+.topstats{display:flex;gap:22px;flex-wrap:wrap}
+.ts{text-align:center}
+.ts-val{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--red);line-height:1}
+.ts-lbl{font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+
+#map{flex:1;width:100%;z-index:1;background:#0b1220}
+.leaflet-top.leaflet-right{margin-top:86px;margin-right:4px}
+.leaflet-control-layers{border:none!important;border-radius:8px!important;box-shadow:var(--shadow)!important;font-family:'IBM Plex Sans',sans-serif;font-size:12px}
+.leaflet-bar{border:none!important;box-shadow:var(--shadow)!important;border-radius:8px!important;overflow:hidden}
+
+/* ───────── ALT BAR ───────── */
+.bottom-bar{position:absolute;bottom:14px;left:14px;right:14px;z-index:1000;background:rgba(255,255,255,.96);
+  padding:12px 18px;border-radius:10px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:9px}
+.top-controls{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.filters{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.fl{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
+.filter-btn{padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:11px;
+  font-family:'IBM Plex Mono',monospace;color:#4a4540;cursor:pointer;transition:.18s}
+.filter-btn:hover{border-color:var(--navy);color:var(--navy)}
+.filter-btn.active{background:var(--red);color:#fff;border-color:var(--red)}
+.studio-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.st-btn{padding:7px 13px;border-radius:6px;border:none;font-size:11px;font-family:'IBM Plex Mono',monospace;font-weight:500;
+  cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:.2s}
+.st-play{background:#eef2f7;color:var(--navy);border:1px solid rgba(27,42,74,.2)}
+.st-play:hover{background:#dde5f0}
+.st-all{background:var(--red);color:#fff}
+.st-all:hover{background:#a50c25}
+.st-rec{background:var(--navy);color:#fff}
+.st-rec:hover{background:#293f6e}
+.speed-sel{padding:6px 8px;border-radius:6px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;background:#fff;color:var(--navy)}
+.year-chips{display:flex;gap:4px;overflow-x:auto;padding-bottom:2px}
+.y-chip{flex:1;min-width:44px;text-align:center;padding:5px 4px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;
+  background:#f2efe9;border:1px solid var(--border);border-radius:5px;cursor:pointer;color:#4a4540;transition:.18s}
+.y-chip:hover{border-color:var(--navy);color:var(--navy);background:#fff}
+.y-chip.active{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600}
+
+/* ───────── YAN PANEL ───────── */
+.side-panel{width:380px;background:#fff;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:1001}
+.sp-head{background:var(--navy);padding:18px 20px;flex-shrink:0}
+.sp-head h2{font-family:'Bebas Neue',sans-serif;font-size:24px;color:#fff;letter-spacing:.04em}
+.sp-head p{font-size:11px;color:rgba(255,255,255,.55);margin-top:3px;font-family:'IBM Plex Mono',monospace}
+.sp-body{overflow-y:auto;flex:1}
+.chart-wrap{padding:16px 16px 0;position:relative;height:215px}
+.ev-head{padding:12px 16px 6px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)}
+.ev-head h3{font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--navy);letter-spacing:.04em}
+.ev-count{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted)}
+.ev-list{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px}
+.ev-card{padding:11px 14px;border:1px solid var(--border);border-radius:6px;background:var(--cream);border-left:3px solid var(--red);cursor:pointer;transition:.2s}
+.ev-card:hover,.ev-card.active{background:#fff3f5;border-left-width:6px;border-left-color:var(--navy)}
+.ev-title{font-weight:600;font-size:13px;margin-bottom:4px;color:var(--navy)}
+.ev-desc{font-size:11px;color:#5a5550;line-height:1.5}
+.ev-tag{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-family:'IBM Plex Mono',monospace;margin-top:6px}
+.ev-empty{padding:20px 16px;font-size:12px;color:var(--muted);font-style:italic}
+
+/* ───────── DETAY MODALI ───────── */
+.detail-modal{position:fixed;inset:0;z-index:2000;background:rgba(15,13,11,.5);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.detail-modal.open{opacity:1;pointer-events:all}
+.dm-box{background:#fff;width:min(560px,92vw);max-height:80vh;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.dm-head{background:var(--navy);padding:18px 20px;display:flex;justify-content:space-between;align-items:flex-start}
+.dm-head-info h3{font-family:'Bebas Neue',sans-serif;font-size:26px;color:#fff;letter-spacing:.04em}
+.dm-head-info p{font-size:11px;color:rgba(255,255,255,.5);font-family:'IBM Plex Mono',monospace;margin-top:3px}
+.dm-close{background:none;border:none;color:rgba(255,255,255,.6);font-size:22px;cursor:pointer}
+.dm-body{overflow-y:auto;padding:16px 20px}
+.dm-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.dm-tag{font-size:10px;font-family:'IBM Plex Mono',monospace;padding:3px 9px;border-radius:3px;border:1px solid}
+.dm-entry{padding:10px 0;border-bottom:1px solid rgba(15,13,11,.06)}
+.dm-entry:last-child{border-bottom:none}
+.dm-year{font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--red);letter-spacing:.06em;margin-bottom:3px}
+.dm-text{font-size:12px;color:#3a3530;line-height:1.6}
+.dm-amount{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:4px}
+.leaflet-popup-content-wrapper{border-radius:8px;padding:0;overflow:hidden;box-shadow:var(--shadow)}
+.leaflet-popup-content{margin:0}
+.cpop{padding:13px 16px}
+.cpop h4{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--red);margin-bottom:4px}
+.cpop p{font-size:11px;color:#3a3530;margin-bottom:3px;line-height:1.4}
+.cpop-btn{display:inline-block;margin-top:8px;padding:5px 12px;background:var(--navy);color:#fff;font-size:11px;font-family:'IBM Plex Mono',monospace;border-radius:4px;cursor:pointer;border:none}
+.tc-deprem{background:#F2D0D6;color:#8B0B1F;border-color:#C8102E}
+.tc-sel{background:#D0EBEE;color:#0E6B74;border-color:#0E6B74}
+.tc-catisma{background:#F5E9CC;color:#7A5010;border-color:#C9962A}
+.tc-saglik{background:#D8E8F5;color:#1A4A7A;border-color:#2A6AAD}
+.tc-gida{background:#D0EAD9;color:#1A6B3A;border-color:#1A6B3A}
+.tc-yangin{background:#FFE8DC;color:#8B3010;border-color:#D05020}
+.tc-diger{background:#E9E1F7;color:#4A2E8A;border-color:#7B5CC8}
+
+/* ═══════════════════════════════════════════════════════
+   SİNEMATİK MOD (KAYIT İÇİN TEMİZ EKRAN)
+═══════════════════════════════════════════════════════ */
+body.cine .topbar, body.cine .bottom-bar, body.cine .side-panel, body.cine .leaflet-control-container{display:none!important}
+#cine{position:absolute;inset:0;z-index:1300;pointer-events:none;opacity:0;transition:opacity .5s}
+body.cine #cine{opacity:1}
+.vignette{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(5,9,18,.55) 100%)}
+
+/* HUD: sol üstte büyük yıl, sağ üstte zaman çizgisi */
+.ch-left{position:absolute;top:30px;left:40px}
+.ch-brand{font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.28em;color:#fff;background:var(--red);display:inline-block;padding:6px 14px;border-radius:30px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.ch-year{font-family:'Bebas Neue',sans-serif;font-size:150px;line-height:.9;color:#fff;letter-spacing:4px;margin-top:10px;text-shadow:0 6px 30px rgba(0,0,0,.6)}
+.ch-year.tick{animation:yearTick .7s cubic-bezier(.2,.9,.25,1.2)}
+@keyframes yearTick{0%{transform:translateY(-40px);opacity:0}100%{transform:none;opacity:1}}
+.ch-count{font-family:'IBM Plex Mono',monospace;font-size:17px;letter-spacing:.2em;color:var(--gold);margin-top:6px;text-shadow:0 2px 10px rgba(0,0,0,.7)}
+.ch-timeline{position:absolute;top:34px;right:40px;display:flex;gap:5px;background:rgba(11,18,32,.72);padding:9px 12px;border-radius:40px;border:1px solid rgba(255,255,255,.12)}
+.tl-y{font-family:'IBM Plex Mono',monospace;font-size:13px;color:rgba(255,255,255,.45);padding:5px 8px;border-radius:20px;transition:all .45s}
+.tl-y.done{color:rgba(255,255,255,.85)}
+.tl-y.now{background:var(--red);color:#fff;font-weight:600;transform:scale(1.18);box-shadow:0 0 18px rgba(200,16,46,.8)}
+
+/* BİLGİ KARTI */
+.aid-card{position:absolute;left:40px;bottom:46px;width:min(780px,56vw);background:linear-gradient(160deg,rgba(18,30,56,.96),rgba(10,16,32,.96));
+  border:1px solid rgba(255,255,255,.14);border-left:8px solid var(--red);border-radius:18px;padding:26px 32px 28px;color:#fff;
+  box-shadow:0 24px 60px rgba(0,0,0,.55);transform:translateX(-120%);opacity:0;transition:transform .75s cubic-bezier(.16,1,.3,1),opacity .4s}
+.aid-card.show{transform:none;opacity:1}
+.aid-card.out{transform:translateX(-30px);opacity:0;transition:transform .35s ease-in,opacity .3s}
+.ac-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ac-tag{font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.12em;text-transform:uppercase;padding:6px 14px;border-radius:30px;color:#0b1220;font-weight:600}
+.ac-route{font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.14em;color:rgba(255,255,255,.7)}
+.ac-name{font-family:'Bebas Neue',sans-serif;font-size:84px;line-height:1;letter-spacing:3px;margin-top:10px}
+.ac-metric{display:flex;align-items:baseline;gap:14px;margin-top:6px;min-height:16px}
+.ac-metric b{font-family:'Bebas Neue',sans-serif;font-size:76px;font-weight:400;color:var(--gold);line-height:1;letter-spacing:2px}
+.ac-metric span{font-size:28px;font-weight:500;color:#fff}
+.ac-metric.cash span{font-size:30px;color:var(--gold);letter-spacing:.04em}
+.ac-chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.chip{display:inline-flex;align-items:center;gap:9px;font-size:21px;font-weight:500;padding:9px 18px;border-radius:40px;background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.18);opacity:0;transform:scale(.6) translateY(10px)}
+.aid-card.show .chip{animation:chipPop .5s cubic-bezier(.2,1.3,.4,1) forwards}
+@keyframes chipPop{to{opacity:1;transform:none}}
+.chip i{font-style:normal;font-size:26px}
+.ac-desc{font-size:25px;line-height:1.5;color:rgba(255,255,255,.92);margin-top:18px;font-weight:300;opacity:0;transform:translateY(8px);transition:all .6s .7s}
+.aid-card.show .ac-desc{opacity:1;transform:none}
+
+/* HARİTA ÜZERİ ÖĞELER */
+.dest-label{position:absolute;transform:translate(-50%,-44px);white-space:nowrap;font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:3px;color:#fff;
+  text-shadow:0 0 6px #000,0 2px 14px #000;animation:labelIn .6s ease both}
+@keyframes labelIn{from{opacity:0;transform:translate(-50%,-30px)}to{opacity:1;transform:translate(-50%,-44px)}}
+.tr-label{position:absolute;transform:translate(-50%,-40px);white-space:nowrap;font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;color:#ff8da0;text-shadow:0 0 6px #000,0 2px 12px #000}
+.ripple{position:absolute;left:-30px;top:-30px;width:60px;height:60px}
+.ripple span{position:absolute;inset:0;border-radius:50%;border:3px solid var(--rc);animation:rip 2.2s ease-out infinite;opacity:0}
+.ripple span:nth-child(2){animation-delay:.7s}.ripple span:nth-child(3){animation-delay:1.4s}
+@keyframes rip{0%{transform:scale(.15);opacity:.95}100%{transform:scale(1.6);opacity:0}}
+.ripple i{position:absolute;left:21px;top:21px;width:18px;height:18px;border-radius:50%;background:var(--rc);border:3px solid #fff;box-shadow:0 0 18px var(--rc)}
+.trdot{position:absolute;left:-12px;top:-12px;width:24px;height:24px;border-radius:50%;background:var(--red);border:4px solid #fff;box-shadow:0 0 0 6px rgba(200,16,46,.35),0 0 26px rgba(200,16,46,.9);animation:trp 1.8s infinite}
+@keyframes trp{50%{box-shadow:0 0 0 14px rgba(200,16,46,.1),0 0 26px rgba(200,16,46,.9)}}
+.veh{position:absolute;left:-26px;top:-26px;width:52px;height:52px}
+.veh svg{width:52px;height:52px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.7))}
+
+/* YIL GEÇİŞ EKRANI */
+.year-intro{position:absolute;inset:0;z-index:1500;pointer-events:none;overflow:hidden;visibility:hidden}
+.year-intro.on{visibility:visible}
+.yi-wipe{position:absolute;inset:0;transform:translateX(-101%);transition:transform .8s cubic-bezier(.77,0,.18,1)}
+.yi-wipe.a{background:var(--red)}
+.yi-wipe.b{background:linear-gradient(135deg,#1B2A4A,#0b1220)}
+.year-intro.in .yi-wipe{transform:none}
+.year-intro.in .yi-wipe.b{transition-delay:.14s}
+.year-intro.out .yi-wipe{transform:translateX(101%)}
+.year-intro.out .yi-wipe.b{transition-delay:0s}.year-intro.out .yi-wipe.a{transition-delay:.14s}
+.yi-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;opacity:0;transition:opacity .5s;text-align:center;padding:0 80px}
+.yi-inner.show{opacity:1}
+.yi-badge{font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.3em;text-transform:uppercase;background:var(--red);padding:8px 20px;border-radius:30px}
+.yi-year{font-family:'Bebas Neue',sans-serif;font-size:230px;line-height:.95;letter-spacing:8px;margin-top:14px;display:flex}
+.yi-year span{display:inline-block;opacity:0;transform:translateY(80px) rotateX(-70deg)}
+.yi-inner.show .yi-year span{animation:digitIn .9s cubic-bezier(.2,.9,.25,1.1) forwards}
+@keyframes digitIn{to{opacity:1;transform:none}}
+.yi-sub{font-size:30px;font-weight:300;color:rgba(255,255,255,.88);margin-top:6px}
+.yi-countries{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:1500px;margin-top:30px}
+.yi-c{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:3px;padding:4px 20px;border:2px solid rgba(255,255,255,.35);border-radius:40px;opacity:0;transform:scale(.7)}
+.yi-inner.show .yi-c{animation:chipPop .5s cubic-bezier(.2,1.3,.4,1) forwards}
+.yi-stats{display:flex;gap:70px;margin-top:38px;padding-top:26px;border-top:1px solid rgba(255,255,255,.25)}
+.yi-st b{font-family:'Bebas Neue',sans-serif;font-size:78px;color:#ff6b81;display:block;line-height:1;font-weight:400}
+.yi-st span{font-family:'IBM Plex Mono',monospace;font-size:15px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.14em}
+
+/* KAYIT ROZETİ */
+.rec-pill{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:2500;background:rgba(200,16,46,.95);color:#fff;padding:7px 16px;border-radius:30px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;display:none;align-items:center;gap:8px}
+.rec-dot{width:9px;height:9px;border-radius:50%;background:#fff;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+.stop-floating{position:fixed;bottom:10px;right:10px;z-index:2600;background:rgba(27,42,74,.85);color:#fff;border:1px solid rgba(255,255,255,.25);
+  padding:6px 12px;border-radius:30px;font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;display:none;opacity:.35}
+.stop-floating:hover{opacity:1}
+body.cine .stop-floating{display:inline-flex}
+
+/* ── v2 eklemeleri ── */
+.tb-tools{display:flex;gap:6px;align-items:center}
+.tool-btn{padding:6px 11px;border-radius:20px;border:1px solid var(--border);background:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--navy);cursor:pointer}
+.tool-btn:hover{background:#eef2f7}.tool-btn.on{background:var(--navy);color:#fff}
+.lang-sw{display:inline-flex;border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.lang-sw button{padding:6px 11px;border:none;background:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;color:var(--navy)}
+.lang-sw button.on{background:var(--red);color:#fff}
+.bar-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bar-lbl{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:.08em;min-width:84px}
+.country-sel{padding:6px 8px;border-radius:6px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;background:#fff;color:var(--navy);max-width:200px}
+.st-net{background:#0E6B74;color:#fff}.st-net:hover{background:#0a5159}
+.st-ctry{background:#7B5CC8;color:#fff}.st-ctry:hover{background:#6446ad}
+.flag{height:52px;border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,.55);margin-right:20px;flex-shrink:0}
+.flag-s{height:30px;border-radius:4px;margin-right:12px;box-shadow:0 1px 6px rgba(0,0,0,.5);vertical-align:middle}
+.ac-name{display:flex;align-items:center}
+.geo-glow{filter:drop-shadow(0 0 9px rgba(255,255,255,.6))}
+.ch-cum{margin-top:14px;width:430px;background:rgba(11,18,32,.74);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:11px 16px}
+.cc-label{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.2em;color:rgba(255,255,255,.7)}
+.cc-bar{height:8px;border-radius:6px;background:rgba(255,255,255,.14);margin:8px 0;overflow:hidden}
+.cc-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--red),#ff8da0);border-radius:6px;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.cc-txt{font-family:'IBM Plex Mono',monospace;font-size:16px;color:#fff;letter-spacing:.06em}
+.cc-txt b{font-family:'Bebas Neue',sans-serif;font-size:34px;font-weight:400;color:var(--gold);letter-spacing:1px;display:inline-block}
+.cc-txt b.bump{animation:bump .5s}
+@keyframes bump{40%{transform:scale(1.35)}}
+.tl-y.has{color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
+.ac-totals{display:flex;flex-wrap:wrap;gap:22px;margin-top:10px}
+.ac-totals div b{font-family:'Bebas Neue',sans-serif;font-size:56px;font-weight:400;color:var(--gold);line-height:1;display:block}
+.ac-totals div span{font-size:20px;color:#fff}
+.yi-flag{height:110px;margin-bottom:14px;display:none}
+.yi-flag img{height:110px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.6)}
+.yi-year{flex-wrap:wrap;justify-content:center;max-width:1750px}
+body.net .ch-timeline,body.net .ch-cum,body.net .ch-count{display:none}
+body.net .ch-year{font-size:110px}
+.net-sub{font-family:'IBM Plex Mono',monospace;font-size:18px;letter-spacing:.2em;color:var(--gold);margin-top:8px;text-shadow:0 2px 10px #000;display:none}
+body.net .net-sub{display:block}
+.net-rank{position:absolute;left:40px;bottom:44px;width:480px;background:rgba(11,18,32,.82);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:18px 22px;color:#fff;display:none}
+body.net .net-rank{display:block}
+.nr-h{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.2em;color:rgba(255,255,255,.65);margin-bottom:10px}
+.nr-row{display:flex;align-items:center;gap:12px;margin:7px 0;font-size:19px}
+.nr-row img{height:22px;border-radius:3px}
+.nr-row .nm{width:150px;white-space:nowrap}
+.nr-row .bar{flex:1;height:10px;background:rgba(255,255,255,.12);border-radius:6px;overflow:hidden}
+.nr-row .bar i{display:block;height:100%;border-radius:6px}
+.nr-row b{font-family:'Bebas Neue',sans-serif;font-size:26px;font-weight:400;width:34px;text-align:right;color:var(--gold)}
+.net-label{position:absolute;transform:translate(-50%,-26px);white-space:nowrap;font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#fff;text-shadow:0 0 6px #000,0 2px 12px #000}
+.net-label small{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--gold);margin-left:6px}
+
+
+/* ── kayıt sırasında performans modu: GPU'yu yoran efektleri kapat ── */
+body.rec-perf .vignette{display:none}
+body.rec-perf .geo-glow{filter:none}
+body.rec-perf .veh svg{filter:none}
+body.rec-perf .aid-card{box-shadow:none}
+body.rec-perf .ch-year,body.rec-perf .dest-label,body.rec-perf .tr-label,body.rec-perf .net-label,body.rec-perf .ch-count{text-shadow:0 2px 3px #000}
+body.rec-perf .ripple span:nth-child(3){display:none}
+body.rec-perf .trdot{animation:none}
+body.rec-perf .leaflet-fade-anim .leaflet-tile{transition:none}
+#cine{contain:layout style}
+.aid-card,.ch-year{will-change:transform}
+@media(max-width:900px){.side-panel{display:none}}
+</style>
+</head>
+<body>
+
+<div class="rec-pill" id="recPill"><div class="rec-dot"></div><span id="recStatusText"></span></div>
+<button class="stop-floating" id="stopBtn" onclick="stopTour()"></button>
+
+<div class="app">
+  <div class="main">
+    <div class="topbar">
+      <div class="brand">
+        <h1 id="brandH1"></h1>
+        <p id="brandSub"></p>
+      </div>
+      <div class="topstats">
+        <div class="ts"><div class="ts-val" id="st-year">2010</div><div class="ts-lbl" data-i18n="yearL"></div></div>
+        <div class="ts"><div class="ts-val" id="st-ops">0</div><div class="ts-lbl" data-i18n="opsL"></div></div>
+        <div class="ts"><div class="ts-val" id="st-ulke">0</div><div class="ts-lbl" data-i18n="countriesL"></div></div>
+        <div class="ts"><div class="ts-val" id="st-tur">0</div><div class="ts-lbl" data-i18n="typesL"></div></div>
+      </div>
+      <div class="tb-tools">
+        <button class="tool-btn" id="sndBtn" onclick="toggleSound()"></button>
+        <div class="lang-sw"><button id="langTR" onclick="setLang('tr')">TR</button><button id="langEN" onclick="setLang('en')">EN</button></div>
+      </div>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- SİNEMATİK KATMAN -->
+    <div id="cine">
+      <div class="vignette"></div>
+      <div class="ch-left">
+        <div class="ch-brand" id="cineBrand"></div>
+        <div class="ch-year" id="cineYear">2010</div>
+        <div class="ch-count" id="cineCount"></div>
+        <div class="net-sub" id="netSub"></div>
+        <div class="ch-cum" id="cineCum">
+          <div class="cc-label" id="ccLabel"></div>
+          <div class="cc-bar"><i id="ccBar"></i></div>
+          <div class="cc-txt"><b id="ccC">0</b> <span id="ccCl"></span> &nbsp;·&nbsp; <b id="ccO">0</b> <span id="ccOl"></span></div>
+        </div>
+      </div>
+      <div class="ch-timeline" id="cineTimeline"></div>
+      <div class="net-rank" id="netRank"></div>
+      <div class="aid-card" id="aidCard">
+        <div class="ac-top"><span class="ac-tag" id="acTag"></span><span class="ac-route" id="acRoute"></span></div>
+        <div class="ac-name" id="acName"></div>
+        <div class="ac-metric" id="acMetric"><b id="acNum"></b><span id="acUnit"></span></div>
+        <div class="ac-totals" id="acTotals"></div>
+        <div class="ac-chips" id="acChips"></div>
+        <div class="ac-desc" id="acDesc"></div>
+      </div>
+    </div>
+
+    <!-- YIL / ÜLKE GEÇİŞ EKRANI -->
+    <div class="year-intro" id="yearIntro">
+      <div class="yi-wipe a"></div><div class="yi-wipe b"></div>
+      <div class="yi-inner" id="yiInner">
+        <div class="yi-flag" id="yiFlag"></div>
+        <div class="yi-badge" id="yiBadge"></div>
+        <div class="yi-year" id="yiYear"></div>
+        <div class="yi-sub" id="yiSub"></div>
+        <div class="yi-countries" id="yiCountries"></div>
+        <div class="yi-stats">
+          <div class="yi-st"><b id="yiA">0</b><span id="yiAl"></span></div>
+          <div class="yi-st"><b id="yiB">0</b><span id="yiBl"></span></div>
+          <div class="yi-st"><b id="yiC">0</b><span id="yiCl"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-bar" id="bottomBar">
+      <div class="top-controls">
+        <div class="filters">
+          <span class="fl" data-i18n="catL"></span>
+          <button class="filter-btn active" data-f="all"></button>
+          <button class="filter-btn" data-f="deprem"></button>
+          <button class="filter-btn" data-f="sel"></button>
+          <button class="filter-btn" data-f="catisma"></button>
+          <button class="filter-btn" data-f="saglik"></button>
+          <button class="filter-btn" data-f="yangin"></button>
+          <button class="filter-btn" data-f="gida"></button>
+          <button class="filter-btn" data-f="diger"></button>
+          <button class="st-btn st-net" onclick="showNetwork()" data-i18n="network"></button>
+        </div>
+        <select class="speed-sel" id="speedSel">
+          <option value="0.75" data-i18n="tempoSlow"></option>
+          <option value="1" selected data-i18n="tempoNormal"></option>
+          <option value="1.4" data-i18n="tempoFast"></option>
+        </select>
+      </div>
+      <div class="bar-row">
+        <span class="bar-lbl" data-i18n="byYear"></span>
+        <button class="st-btn st-play" onclick="playCinematicYear(S.year)" data-i18n="playYear"></button>
+        <button class="st-btn st-all" onclick="playAllYears()" data-i18n="playAll"></button>
+        <select class="speed-sel" id="recFmt" title="Kayıt biçimi"><option value="auto" data-i18n="recFmtAuto"></option><option value="vp8" data-i18n="recFmtVp8"></option><option value="vp9" data-i18n="recFmtVp9"></option></select>
+        <button class="st-btn st-rec" onclick="recordOneYearVideo()" data-i18n="recYear"></button>
+        <span class="bar-lbl" style="margin-left:14px" data-i18n="byCountry"></span>
+        <select class="country-sel" id="countrySel"></select>
+        <select class="speed-sel" id="countryYearSel"></select>
+        <button class="st-btn st-ctry" onclick="playCountryFromSel()" data-i18n="playCountry"></button>
+        <button class="st-btn st-rec" onclick="recordCountryVideo()" data-i18n="recCountry"></button>
+        <button class="st-btn st-ctry" onclick="playAllCountries()" data-i18n="playAllCountries"></button>
+      </div>
+      <div class="year-chips" id="yearChips"></div>
+    </div>
+  </div>
+
+  <div class="side-panel">
+    <div class="sp-head"><h2><span data-i18n="spHead"></span> · <span id="pYear">2010</span></h2><p data-i18n="spSub"></p></div>
+    <div class="sp-body">
+      <div class="chart-wrap"><canvas id="aidChart"></canvas></div>
+      <div class="ev-head"><h3 data-i18n="opsHead"></h3><span class="ev-count" id="evCount">0</span></div>
+      <div class="ev-list" id="evList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="detail-modal" id="detailModal">
+  <div class="dm-box">
+    <div class="dm-head">
+      <div class="dm-head-info"><h3 id="dmTitle"></h3><p id="dmSub"></p></div>
+      <button class="dm-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="dm-body" id="dmBody"></div>
+  </div>
+</div>
+
+<script>
+/* ═════════ 1. VERİ (parasal alanlar çıkarıldı) ═════════ */
+const DB = [{"id":1,"c":"Afganistan","lat":33.93,"lng":67.71,"y":2010,"t":"sel","amt":11,"u":"ton","desc":"Sel felaketi: çadır, battaniye, gıda. Mezar-ı Şerif'e ulaştırıldı."},{"id":11,"c":"Arnavutluk","lat":41.15,"lng":20.17,"y":2010,"t":"sel","amt":7.2,"u":"ton","desc":"Sel: 7,2 ton gıda/ilaç + 20 su pompası. 3.800 kişi tahliye."},{"id":26,"c":"Bosna Hersek","lat":44.2,"lng":17.9,"y":2010,"t":"yangin","amt":3,"u":"helikopter","desc":"3 söndürme helikopteri + 1 kargo uçağı gıda/barınma."},{"id":32,"c":"Bulgaristan","lat":42.7,"lng":25.5,"y":2010,"t":"sel","amt":1,"u":"yardım","desc":"Sel felaketi ayni yardım."},{"id":44,"c":"Çin","lat":35.9,"lng":104.2,"y":2010,"t":"deprem","amt":5950,"u":"USD","desc":"Deprem nakdi yardım."},{"id":45,"c":"Demokratik Kongo Cumhuriyeti","lat":-4,"lng":21.8,"y":2010,"t":"catisma","amt":1300000,"u":"USD","desc":"İç karışıklık ayni yardım."},{"id":60,"c":"Filistin","lat":31.95,"lng":35.23,"y":2010,"t":"catisma","amt":28500,"u":"ton un","desc":"5 uçak + 106 tır + 28.500 ton un + Mavi Marmara tahliyesi."},{"id":75,"c":"Gambiya","lat":13.4,"lng":-15.3,"y":2010,"t":"sel","amt":450,"u":"koli","desc":"Ulusal afet: 450 gıda koli askeri kargoda."},{"id":82,"c":"Haiti","lat":18.97,"lng":-72.28,"y":2010,"t":"deprem","amt":50,"u":"ton","desc":"7,0 deprem: 1 mobil hastane, 23 sağlık personeli, 21.086 poliklinik."},{"id":87,"c":"Irak","lat":33.2,"lng":43.7,"y":2010,"t":"saglik","amt":174,"u":"yaralı","desc":"174 yaralı + 163 refakatçi ambulans uçakla getirildi."},{"id":96,"c":"İsrail","lat":31.05,"lng":34.85,"y":2010,"t":"yangin","amt":2,"u":"uçak","desc":"Hayfa orman yangını: 2 söndürme uçağı."},{"id":101,"c":"Kırgızistan","lat":41.2,"lng":74.7,"y":2010,"t":"catisma","amt":22,"u":"ton","desc":"İç karışıklık: ambulans + 10 ton ilaç + 12 ton gıda. 307 vatandaş tahliye."},{"id":103,"c":"Kosova","lat":42.6,"lng":20.9,"y":2010,"t":"saglik","amt":1,"u":"kişi","desc":"Yaralı güvenlik subayı tedavi için ülkeye getirildi."},{"id":124,"c":"Moğolistan","lat":46.9,"lng":103.8,"y":2010,"t":"gida","amt":10,"u":"ton","desc":"Soğuk hava: nakdi destek + 10 ton gıda/barınma."},{"id":126,"c":"Moldova","lat":47.4,"lng":28.4,"y":2010,"t":"sel","amt":100000,"u":"USD","desc":"Nistru-Prut nehir taşkını: 12.000 kişi etkilendi."},{"id":142,"c":"Özbekistan","lat":41.4,"lng":64.6,"y":2010,"t":"catisma","amt":90000,"u":"TL","desc":"İç karışıklık: gıda ve temizlik malzemesi."},{"id":144,"c":"Pakistan","lat":30.4,"lng":69.3,"y":2010,"t":"sel","amt":14170,"u":"ton","desc":"Tarihi sel: 21 uçak + 586 tır + 10 tren ile 14.170 ton. 2 sahra hastanesi."},{"id":151,"c":"Rusya","lat":61.5,"lng":105.3,"y":2010,"t":"yangin","amt":500000,"u":"TL","desc":"Temmuz orman yangını: 2 söndürme helikopteri + ekipman."},{"id":154,"c":"Sırbistan","lat":44,"lng":21,"y":2010,"t":"sel","amt":20,"u":"ton","desc":"Sel: 20 ton insani yardım malzemesi."},{"id":171,"c":"Şili","lat":-35.7,"lng":-71.5,"y":2010,"t":"deprem","amt":18,"u":"ton","desc":"8,8 deprem + tsunami: 18 ton barınma/gıda + nakdi destek."},{"id":172,"c":"Tacikistan","lat":38.9,"lng":71.3,"y":2010,"t":"sel","amt":100000,"u":"USD","desc":"Hatlon-Badahşan sel: nakdi yardım."},{"id":202,"c":"Uganda","lat":1.4,"lng":32.3,"y":2010,"t":"sel","amt":100000,"u":"USD","desc":"Bududa heyelanı (365 can kaybı, binlerce evsiz): Kampala Büyükelçiliği aracılığıyla nakdi destek."},{"id":204,"c":"KKTC","lat":35.25,"lng":33.4,"y":2010,"t":"sel","amt":20,"u":"ton","desc":"Sel felaketi: 20 ton gıda ve barınma yardımı + nakdi destek."},{"id":61,"c":"Filistin","lat":31.95,"lng":35.23,"y":2011,"t":"gida","amt":6000,"u":"ton","desc":"6.000 ton un yardımı."},{"id":97,"c":"Japonya","lat":36.2,"lng":138.3,"y":2011,"t":"deprem","amt":60,"u":"ton","desc":"Tōhoku 9,0 + tsunami: 33 kişilik AK ekibi."},{"id":109,"c":"Libya","lat":26.3,"lng":17.2,"y":2011,"t":"catisma","amt":3197,"u":"ton","desc":"İç karışıklık: 3.197 ton yardım. 575 yaralı tedavi."},{"id":123,"c":"Mısır","lat":26.8,"lng":30.8,"y":2011,"t":"catisma","amt":114,"u":"kişi","desc":"Kuzey Afrika tahliyesi: Mısır üzerinden çıkış."},{"id":145,"c":"Pakistan","lat":30.4,"lng":69.3,"y":2011,"t":"saglik","amt":121,"u":"ton tıbbi","desc":"Sel devamı: 121 ton tıbbi malzeme + sahra hastaneleri hibe."},{"id":156,"c":"Somali","lat":5.2,"lng":46.2,"y":2011,"t":"catisma","amt":61006,"u":"ton","desc":"İç karışıklık+kuraklık: 21 uçak + 12 gemi ile 61.006 ton."},{"id":203,"c":"Tunus","lat":33.9,"lng":9.5,"y":2011,"t":"catisma","amt":1,"u":"operasyon","desc":"Kuzey Afrika'daki karışıklıklar: Libya, Mısır ve Tunus'tan yaklaşık 29 bin kişi 102 uçak ve 14 gemiyle tahliye edildi (üç ülke toplamı)."},{"id":212,"c":"Afganistan","lat":33.93,"lng":67.71,"y":2011,"t":"saglik","amt":4,"u":"yaralı","desc":"Bombalı saldırıda yaralanan 4 kişi ve 4 refakatçisi ambulans uçakla Türkiye'ye getirilip tedavi edildi."},{"id":237,"c":"Rusya","lat":61.5,"lng":105.3,"y":2011,"t":"deprem","amt":2400,"u":"battaniye","desc":"Japonya depremi sonrası tahliye edilenlere 2.400 battaniye, mutfak seti ve yatak; Çeçenistan'da mağdur 414 Türk işçi 3 THY uçağıyla tahliye edildi."},{"id":12,"c":"Arnavutluk","lat":41.15,"lng":20.17,"y":2012,"t":"yangin","amt":2,"u":"uçak","desc":"Orman yangını: 2 söndürme uçağı."},{"id":62,"c":"Filistin","lat":31.95,"lng":35.23,"y":2012,"t":"gida","amt":12500,"u":"ton","desc":"12.500 ton un yardımı."},{"id":132,"c":"Myanmar","lat":21.9,"lng":95.9,"y":2012,"t":"catisma","amt":1289,"u":"ton","desc":"Arakan iç karışıklıkları: 39 ton gönderildi + 1.250 ton gıda yerelden."},{"id":146,"c":"Pakistan","lat":30.4,"lng":69.3,"y":2012,"t":"deprem","amt":4620,"u":"konut","desc":"4.620 konut + 8 okul + 12 ticaret merkezi inşası."},{"id":224,"c":"Kosova","lat":42.6,"lng":20.9,"y":2012,"t":"saglik","amt":3,"u":"yaralı","desc":"Trafik kazasında ağır yaralanan 3 Kosovalı ambulans uçakla Türkiye'ye getirilip tedavi edildi."},{"id":58,"c":"Filipinler","lat":12.9,"lng":121.8,"y":2013,"t":"sel","amt":70000,"u":"gıda paketi","desc":"Haiyan Tayfunu: 70.000 gıda paketi, AFAD+Kızılay sahada."},{"id":63,"c":"Filistin","lat":31.95,"lng":35.23,"y":2013,"t":"gida","amt":10000,"u":"ton","desc":"10.000 ton un yardımı."},{"id":79,"c":"Güney Sudan","lat":6.9,"lng":31.3,"y":2013,"t":"catisma","amt":21,"u":"kişi","desc":"Juba'dan 21 Türk vatandaşı C-130 ile tahliye."},{"id":128,"c":"Moritanya","lat":21,"lng":-10.9,"y":2013,"t":"gida","amt":2000,"u":"ton şeker","desc":"2.000 ton şeker (Kızılay+TİKA iş birliği)."},{"id":138,"c":"Nijer","lat":17.6,"lng":8.1,"y":2013,"t":"gida","amt":5900,"u":"ton","desc":"2.750 ton şeker + 3.150 ton un (Kızılay+TİKA)."},{"id":152,"c":"Senegal","lat":14.5,"lng":-14.5,"y":2013,"t":"gida","amt":2000,"u":"ton şeker","desc":"2.000 ton şeker (Kızılay+TİKA)."},{"id":166,"c":"Sudan","lat":12.86,"lng":30.22,"y":2013,"t":"sel","amt":15.5,"u":"ton","desc":"Sel: battaniye, cibinlik, çadır, mutfak seti."},{"id":180,"c":"Yemen","lat":15.6,"lng":48.5,"y":2013,"t":"saglik","amt":30,"u":"ton","desc":"Sahra hastanesi + donanımı THY ile gönderildi."},{"id":206,"c":"Kuzey Makedonya","lat":41.6,"lng":21.75,"y":2013,"t":"diger","amt":4.3,"u":"ton","desc":"Kurban Bayramı: Türk Kızılay aracılığıyla 1 tır ile 4,3 ton giyim yardımı."},{"id":214,"c":"Bosna Hersek","lat":44.2,"lng":17.9,"y":2013,"t":"yangin","amt":1,"u":"helikopter","desc":"Temmuz orman yangınları: yangın söndürme helikopteri gönderildi."},{"id":226,"c":"Lübnan","lat":33.85,"lng":35.86,"y":2013,"t":"gida","amt":1000,"u":"ton şeker","desc":"1.000 ton şeker 1 gemiyle gönderildi."},{"id":230,"c":"Myanmar","lat":21.9,"lng":95.9,"y":2013,"t":"catisma","amt":1,"u":"yardım","desc":"Rohingyalı Müslümanlar için gıda ve gıda dışı malzeme temin edildi."},{"id":234,"c":"Mısır","lat":26.8,"lng":30.8,"y":2013,"t":"catisma","amt":114,"u":"kişi","desc":"İç karışıklık: 114 vatandaş tahliye edildi ve nakdi destek sağlandı."},{"id":2,"c":"Afganistan","lat":33.93,"lng":67.71,"y":2014,"t":"sel","amt":213,"u":"ton","desc":"Badakşan heyelanı + Cevizcan seli: 3.000 ailelik gıda, 2.400 kişilik giysi."},{"id":27,"c":"Bosna Hersek","lat":44.2,"lng":17.9,"y":2014,"t":"sel","amt":1,"u":"ton","desc":"Sel: hijyen malzemesi, Kızılay + İBB + TİKA desteği."},{"id":39,"c":"Çad","lat":15.5,"lng":18.7,"y":2014,"t":"gida","amt":55,"u":"ton","desc":"İnsani kriz: 55 ton gıda/ilaç/giysi THY uçağıyla."},{"id":64,"c":"Filistin","lat":31.95,"lng":35.23,"y":2014,"t":"catisma","amt":15000,"u":"ton un","desc":"Gazze: 15.000 ton un + DSÖ aracılığıyla tıbbi yardım + 10.000 gıda koli."},{"id":88,"c":"Irak","lat":33.2,"lng":43.7,"y":2014,"t":"catisma","amt":1224,"u":"tır","desc":"Musul krizi: 1.224 tır + 3 barınma merkezi (34.500 kişi)."},{"id":99,"c":"Kamerun","lat":7.4,"lng":12.4,"y":2014,"t":"catisma","amt":32,"u":"ton","desc":"OAC mültecileri için battaniye, barınma, ilaç, giyim."},{"id":201,"c":"İtalya","lat":41.9,"lng":12.6,"y":2014,"t":"yangin","amt":31,"u":"kişi","desc":"Feribot yangını: 58 Türk vatandaşından 31'i AFAD tarafından tahliye edildi."},{"id":207,"c":"Kuzey Makedonya","lat":41.6,"lng":21.75,"y":2014,"t":"gida","amt":2000,"u":"gıda paketi","desc":"Ramazan: Vakıflar Genel Müdürlüğü tarafından 2.000 kuru gıda paketi gönderildi."},{"id":231,"c":"Myanmar","lat":21.9,"lng":95.9,"y":2014,"t":"catisma","amt":1,"u":"yardım","desc":"TİKA aracılığıyla gıda/gıda dışı malzeme + UNICEF ile Rakhayn Eyaleti'nde acil su, sanitasyon ve hijyen yardımı."},{"id":242,"c":"Sırbistan","lat":44,"lng":21,"y":2014,"t":"sel","amt":800,"u":"kurutma makinesi","desc":"Sel felaketi: yerelden temin edilen 800 duvar kurutma makinesi yetkililere teslim edildi."},{"id":3,"c":"Afganistan","lat":33.93,"lng":67.71,"y":2015,"t":"deprem","amt":5,"u":"ton","desc":"7,5 Badakşan depremi: 5 ton ilaç gönderildi."},{"id":13,"c":"Arnavutluk","lat":41.15,"lng":20.17,"y":2015,"t":"sel","amt":1700,"u":"koli","desc":"Sel: 1.700 gıda kolisi, 4 AFAD personeli."},{"id":65,"c":"Filistin","lat":31.95,"lng":35.23,"y":2015,"t":"gida","amt":15000,"u":"ton","desc":"15.000 ton un yardımı."},{"id":77,"c":"Gine","lat":11,"lng":-10.9,"y":2015,"t":"saglik","amt":880000,"u":"USD","desc":"Ebola salgını: ilaç + tıbbi malzeme."},{"id":108,"c":"Liberya","lat":6.4,"lng":-9.4,"y":2015,"t":"saglik","amt":860000,"u":"USD","desc":"Ebola salgını: ilaç ve tıbbi malzeme."},{"id":121,"c":"Malezya","lat":4.2,"lng":108,"y":2015,"t":"sel","amt":1650,"u":"yatak/baza","desc":"Sel: 1.650 yatak ve baza yerinden temin."},{"id":133,"c":"Myanmar","lat":21.9,"lng":95.9,"y":2015,"t":"gida","amt":3510000,"u":"USD","desc":"UNICEF hijyen + TİKA bambu konut projesi."},{"id":137,"c":"Nepal","lat":28.4,"lng":84.1,"y":2015,"t":"deprem","amt":377960,"u":"USD","desc":"Gorkha 7,9 + 7,4 artçı: 38 AK/UMKE/STK personeli, ilaç, hijyen, gıda."},{"id":153,"c":"Sierra Leone","lat":8.5,"lng":-11.8,"y":2015,"t":"saglik","amt":860000,"u":"USD","desc":"Ebola salgını: ilaç ve tıbbi malzeme."},{"id":174,"c":"Ukrayna","lat":49,"lng":31.2,"y":2015,"t":"catisma","amt":100,"u":"çadır","desc":"İç karışıklık: 100 çadır + 1.000 battaniye + 100 mutfak seti."},{"id":177,"c":"Vanuatu","lat":-15.4,"lng":166.9,"y":2015,"t":"sel","amt":150000,"u":"USD","desc":"Pam Tayfunu: nakdi yardım."},{"id":181,"c":"Yemen","lat":15.6,"lng":48.5,"y":2015,"t":"catisma","amt":51,"u":"ton","desc":"İç karışıklık: 2.400 gıda koli + 6 ton ilaç."},{"id":40,"c":"Çad","lat":15.5,"lng":18.7,"y":2016,"t":"gida","amt":10000,"u":"koli","desc":"10.000 gıda kolisi 6 kampta dağıtıldı."},{"id":47,"c":"Ekvador","lat":-1.8,"lng":-78.2,"y":2016,"t":"deprem","amt":4000,"u":"koli","desc":"7,8 deprem: 2.000 gıda koli + 2.000 hijyen kiti + mobil tuvaletler."},{"id":51,"c":"Etiyopya","lat":9.1,"lng":40.5,"y":2016,"t":"gida","amt":2500,"u":"ton","desc":"2.500 ton un ve şeker (Somali ile birlikte)."},{"id":66,"c":"Filistin","lat":31.95,"lng":35.23,"y":2016,"t":"gida","amt":26000,"u":"ton","desc":"Lady Leyla + Eclips gemileri: un, şeker, pirinç, giyim, oyuncak."},{"id":83,"c":"Haiti","lat":18.97,"lng":-72.28,"y":2016,"t":"sel","amt":100000,"u":"USD","desc":"Matthew Kasırgası nakdi yardım."},{"id":89,"c":"Irak","lat":33.2,"lng":43.7,"y":2016,"t":"catisma","amt":1500,"u":"çadır","desc":"Erbil: 1.500 büyük AFAD çadırı + WC/duş konteynerleri."},{"id":157,"c":"Somali","lat":5.2,"lng":46.2,"y":2016,"t":"gida","amt":11000,"u":"ton","desc":"5.000 ton şeker + 6.000 ton un gemisiyle + altyapı projeleri."},{"id":162,"c":"Somaliland","lat":9,"lng":46.2,"y":2016,"t":"gida","amt":5000,"u":"ton","desc":"5.000 ton un ve şeker."},{"id":182,"c":"Yemen","lat":15.6,"lng":48.5,"y":2016,"t":"gida","amt":5400,"u":"ton","desc":"Şefkat Gemisi: 5.400 ton gıda. STK iş birliği."},{"id":208,"c":"Kuzey Makedonya","lat":41.6,"lng":21.75,"y":2016,"t":"sel","amt":3,"u":"tır","desc":"Ağustos selleri: 3 tır ile 500 çamaşır makinesi ve 500 mutfak seti gönderildi."},{"id":232,"c":"Myanmar","lat":21.9,"lng":95.9,"y":2016,"t":"gida","amt":16000,"u":"çuval","desc":"TİKA işbirliğiyle Arakan'da 16.000 çuval pirinç ve 3.000 kutu sıvı yağ dağıtıldı."},{"id":240,"c":"Sudan","lat":12.86,"lng":30.22,"y":2016,"t":"sel","amt":56000,"u":"USD","desc":"Haziran yağışları sonrası Hartum Büyükelçiliği aracılığıyla nakdi yardım."},{"id":14,"c":"Arnavutluk","lat":41.15,"lng":20.17,"y":2017,"t":"sel","amt":15087,"u":"adet","desc":"Sel: 2 tır giyim (15.087 adet) + 1.300 gıda kolisi."},{"id":67,"c":"Filistin","lat":31.95,"lng":35.23,"y":2017,"t":"gida","amt":25000,"u":"ton","desc":"10.000 tonluk gemi + UNRWA ile 15.000 ton un."},{"id":90,"c":"Irak","lat":33.2,"lng":43.7,"y":2017,"t":"deprem","amt":1380,"u":"çadır","desc":"Irak-İran sınırı 7,2: 10 AK + 10 sağlık personeli, 1.380 çadır."},{"id":102,"c":"Kolombiya","lat":4.6,"lng":-74.1,"y":2017,"t":"sel","amt":100000,"u":"USD","desc":"Mocoa seli: nakdi yardım."},{"id":110,"c":"Libya","lat":26.3,"lng":17.2,"y":2017,"t":"catisma","amt":275000,"u":"USD","desc":"İç karışıklık: Türk Kızılay ilaç/tıbbi malzeme."},{"id":129,"c":"Mozambik","lat":-18.7,"lng":35.5,"y":2017,"t":"sel","amt":118,"u":"aile","desc":"Dineo fırtınası: 118 aile barınak inşaatı."},{"id":134,"c":"Myanmar","lat":21.9,"lng":95.9,"y":2017,"t":"catisma","amt":2400000,"u":"USD","desc":"Arakan: okul, sağlık, yol yapımı (TİKA) + UNICEF su/sanitasyon."},{"id":158,"c":"Somali","lat":5.2,"lng":46.2,"y":2017,"t":"gida","amt":13000,"u":"ton","desc":"Kıtlık: 5.446 aileye gıda + 13.000 tonluk gemi. Mogadişu AK+sağlık."},{"id":183,"c":"Yemen","lat":15.6,"lng":48.5,"y":2017,"t":"gida","amt":10000,"u":"ton un","desc":"10.000 ton un + 2 sahra hastanesi + UNICEF aracılığıyla yardım."},{"id":213,"c":"Bangladeş","lat":23.68,"lng":90.35,"y":2017,"t":"catisma","amt":1,"u":"yardım","desc":"Myanmar'dan göç eden Arakanlılar için yürütülen yardım çalışmaları (2012–2017)."},{"id":228,"c":"Moldova","lat":47.4,"lng":28.4,"y":2017,"t":"sel","amt":100000,"u":"USD","desc":"Afet boyutundaki kar yağışı sonrası nakdi destek."},{"id":4,"c":"Afganistan","lat":33.93,"lng":67.71,"y":2018,"t":"sel","amt":3600,"u":"koli","desc":"Sel, kuraklık, iç karışıklık: 3.600 gıda kolisi."},{"id":18,"c":"Bangladeş","lat":23.68,"lng":90.35,"y":2018,"t":"saglik","amt":2070,"u":"bambu ev","desc":"Rohingyalılar: 1 sahra hastanesi, 2.070 bambu ev, 24.000 gıda koli, 8 su kuyusu."},{"id":50,"c":"Endonezya","lat":-0.8,"lng":113.9,"y":2018,"t":"deprem","amt":690,"u":"hijyen koli","desc":"Sulawesi depremi+tsunami: 250 çadır, 1.000 uyku tulumu, 690 hijyen koli."},{"id":68,"c":"Filistin","lat":31.95,"lng":35.23,"y":2018,"t":"gida","amt":26000,"u":"ton","desc":"26.000 ton un (UNRWA) + DSÖ aracılığıyla acil tıbbi yardım."},{"id":91,"c":"Irak","lat":33.2,"lng":43.7,"y":2018,"t":"gida","amt":20000,"u":"koli","desc":"20.000 gıda koli + sınır ötesi hijyen yardımı."},{"id":92,"c":"İran","lat":32.4,"lng":53.7,"y":2018,"t":"deprem","amt":10,"u":"kişi","desc":"Düşen özel jet kaza-kırım: 3 kişilik AK ekibi."},{"id":106,"c":"Laos","lat":17.96,"lng":102.6,"y":2018,"t":"sel","amt":25000,"u":"USD","desc":"Sel nakdi yardım."},{"id":167,"c":"Sudan","lat":12.86,"lng":30.22,"y":2018,"t":"gida","amt":25000,"u":"ton","desc":"10.000 ton buğday + 15.000 ton mazot gemi ile."},{"id":178,"c":"Vietnam","lat":14.1,"lng":108.3,"y":2018,"t":"sel","amt":50000,"u":"USD","desc":"Sel nakdi yardım."},{"id":209,"c":"Kuzey Makedonya","lat":41.6,"lng":21.75,"y":2018,"t":"diger","amt":14.5,"u":"ton","desc":"Aracinovo Belediyesi'ne 2 tırla 14,5 ton okul malzemesi (öğrenci sırası, dolap, sandalye) teslim edildi."},{"id":235,"c":"Pakistan","lat":30.4,"lng":69.3,"y":2018,"t":"gida","amt":500,"u":"koli","desc":"500 gıda kolisi yardımı yapıldı."},{"id":15,"c":"Arnavutluk","lat":41.15,"lng":20.17,"y":2019,"t":"deprem","amt":600,"u":"adet","desc":"5,8 Dürres ve 26 Kasım depremi: AK ekibi, 1.000 gıda koli + 600 çadır."},{"id":19,"c":"Bangladeş","lat":23.68,"lng":90.35,"y":2019,"t":"saglik","amt":2500,"u":"bambu ev","desc":"2.500 bambu ev, 55.000 gıda koli, 3 sağlık merkezi, iftar hizmeti."},{"id":34,"c":"Burkina Faso","lat":12.4,"lng":-1.6,"y":2019,"t":"gida","amt":100000,"u":"USD","desc":"Kuraklık: nakdi yardım."},{"id":80,"c":"Güney Sudan","lat":6.9,"lng":31.3,"y":2019,"t":"sel","amt":2335,"u":"koli","desc":"Boma seli: 2.335 gıda koli."},{"id":130,"c":"Mozambik","lat":-18.7,"lng":35.5,"y":2019,"t":"sel","amt":1300,"u":"koli","desc":"İdai Kasırgası: 50 kişilik Türk ekibi, çadır kent, 1.300 koli."},{"id":159,"c":"Somali","lat":5.2,"lng":46.2,"y":2019,"t":"sel","amt":4800,"u":"koli","desc":"Beledweyne seli: 4.800 gıda koli + 17.600 klor tableti."},{"id":163,"c":"Somaliland","lat":9,"lng":46.2,"y":2019,"t":"gida","amt":2125,"u":"koli","desc":"Kuraklık: 2.125 gıda koli."},{"id":184,"c":"Yemen","lat":15.6,"lng":48.5,"y":2019,"t":"gida","amt":37656,"u":"koli","desc":"AK ekibi + 35.351 gıda koli + 1.170 ton su + 2 mobil klinik."},{"id":216,"c":"Filistin","lat":31.95,"lng":35.23,"y":2019,"t":"catisma","amt":99307,"u":"USD","desc":"UNRWA ile mutabakat: Filistin kampanya bağışlarının %60'ı UNRWA'ya aktarıldı."},{"id":220,"c":"Irak","lat":33.2,"lng":43.7,"y":2019,"t":"sel","amt":1,"u":"yardım","desc":"Sert kış: Hakkari İl AFAD Müdürlüğü aracılığıyla gıda kolisi ve temizlik paketi dağıtıldı."},{"id":233,"c":"Myanmar","lat":21.9,"lng":95.9,"y":2019,"t":"catisma","amt":1,"u":"yardım","desc":"Arakan bölgesinde insani yardım faaliyetleri sürdürüldü."},{"id":241,"c":"Sudan","lat":12.86,"lng":30.22,"y":2019,"t":"sel","amt":100,"u":"çadır","desc":"Sel felaketi: askeri uçakla 100 çadır gönderildi."},{"id":244,"c":"İran","lat":32.4,"lng":53.7,"y":2019,"t":"catisma","amt":285,"u":"kişi","desc":"Sınırın ara bölgesinde kalan 285 mülteci için insani yardım malzemesi (Van İl AFAD Müdürlüğü)."},{"id":5,"c":"Afganistan","lat":33.93,"lng":67.71,"y":2020,"t":"gida","amt":8000,"u":"koli","desc":"Covid-19 Gıda Destek Projesi: 8.000 gıda kolisi (Türk Kızılay)."},{"id":16,"c":"Arnavutluk","lat":41.15,"lng":20.17,"y":2020,"t":"deprem","amt":300,"u":"çadır","desc":"Deprem sonrası ilave 300 çadır tırlarla gönderildi."},{"id":20,"c":"Bangladeş","lat":23.68,"lng":90.35,"y":2020,"t":"saglik","amt":10000,"u":"koli","desc":"10.000 gıda paketi + sahra hastanesi işletimi devam."},{"id":38,"c":"Cibuti","lat":11.8,"lng":42.6,"y":2020,"t":"sel","amt":420,"u":"çadır","desc":"420 çadır + su tahliye ekipmanı + 280 koli."},{"id":41,"c":"Çad","lat":15.5,"lng":18.7,"y":2020,"t":"sel","amt":40000,"u":"USD","desc":"Sel afeti nakdi yardım."},{"id":52,"c":"Etiyopya","lat":9.1,"lng":40.5,"y":2020,"t":"saglik","amt":280,"u":"hijyen paketi","desc":"280 hijyen paketi THY ile gönderildi."},{"id":56,"c":"Fiji","lat":-17.7,"lng":178.1,"y":2020,"t":"sel","amt":10000,"u":"USD","desc":"Harold Kasırgası nakdi yardım."},{"id":59,"c":"Filipinler","lat":12.9,"lng":121.8,"y":2020,"t":"deprem","amt":30000,"u":"USD","desc":"Mindanao depremleri (6,3–6,6): nakdi yardım."},{"id":69,"c":"Filistin","lat":31.95,"lng":35.23,"y":2020,"t":"gida","amt":27200,"u":"ton","desc":"26.000 ton un + 1.200 ton nohut UNRWA'ya teslim."},{"id":112,"c":"Lübnan","lat":33.85,"lng":35.86,"y":2020,"t":"catisma","amt":750,"u":"koli","desc":"Beyrut Limanı patlaması: tıbbi malzeme + 750 gıda koli."},{"id":139,"c":"Nijer","lat":17.6,"lng":8.1,"y":2020,"t":"sel","amt":40000,"u":"USD","desc":"Sel nakdi yardım."},{"id":143,"c":"Özbekistan","lat":41.4,"lng":64.6,"y":2020,"t":"sel","amt":30000,"u":"USD","desc":"Sardoba Barajı su sızıntısı: 11.598 kişi tahliye."},{"id":185,"c":"Yemen","lat":15.6,"lng":48.5,"y":2020,"t":"gida","amt":6000,"u":"koli","desc":"6.000 gıda koli + 35 kişiye protez desteği."},{"id":221,"c":"Irak","lat":33.2,"lng":43.7,"y":2020,"t":"diger","amt":100000,"u":"USD","desc":"Telafer'de kurulacak Şehit Musa Özalkan Kültür Merkezi projesine destek."},{"id":243,"c":"Sırbistan","lat":44,"lng":21,"y":2020,"t":"saglik","amt":200000,"u":"maske","desc":"Covid-19: 200.000 cerrahi maske (100.000'i Sağlık Bakanlığı hibesi) Sırbistan İçişleri Bakanlığı'na teslim edildi."},{"id":6,"c":"Afganistan","lat":33.93,"lng":67.71,"y":2021,"t":"gida","amt":3402,"u":"koli","desc":"İç karışıklık: 3.402 gıda kolisi + 50 aileye ekmek yardımı."},{"id":21,"c":"Bangladeş","lat":23.68,"lng":90.35,"y":2021,"t":"saglik","amt":324,"u":"tuvalet/banyo","desc":"Barınma, sağlık, gıda, hijyen. 324 tuvalet, 11 su kuyusu."},{"id":28,"c":"Bosna Hersek","lat":44.2,"lng":17.9,"y":2021,"t":"sel","amt":1,"u":"operasyon","desc":"Sava Nehri'nde arama-kurtarma operasyonu."},{"id":53,"c":"Etiyopya","lat":9.1,"lng":40.5,"y":2021,"t":"catisma","amt":80000,"u":"USD","desc":"Tigray krizi: DSÖ çağrısı üzerine nakdi yardım."},{"id":57,"c":"Fiji","lat":-17.7,"lng":178.1,"y":2021,"t":"sel","amt":10000,"u":"USD","desc":"Yasa Fırtınası: 24.000 kişi etkilendi."},{"id":78,"c":"Guatemala","lat":15.8,"lng":-90.2,"y":2021,"t":"sel","amt":20000,"u":"USD","desc":"Eta Kasırgası: nakdi yardım."},{"id":84,"c":"Haiti","lat":18.97,"lng":-72.28,"y":2021,"t":"deprem","amt":80,"u":"çadır","desc":"Deprem: 80 çadır, 222 gıda koli, 270 hijyen seti A400 ile."},{"id":85,"c":"Hırvatistan","lat":45.1,"lng":15.2,"y":2021,"t":"deprem","amt":200,"u":"konteyner ev","desc":"Petrinja 6,2: 200 konteyner ev + 480 çadır + 272 ısıtıcı."},{"id":86,"c":"Honduras","lat":15.2,"lng":-86.2,"y":2021,"t":"sel","amt":20000,"u":"USD","desc":"Eta Kasırgası nakdi yardım."},{"id":107,"c":"Laos","lat":17.96,"lng":102.6,"y":2021,"t":"saglik","amt":40000,"u":"USD","desc":"Covid + yoksulluk: nakdi yardım."},{"id":113,"c":"Lübnan","lat":33.85,"lng":35.86,"y":2021,"t":"gida","amt":230000,"u":"USD","desc":"Ekonomik kriz: 4 ayrı nakdi paket, 2.000 gıda koli."},{"id":117,"c":"Madagaskar","lat":-18.8,"lng":47,"y":2021,"t":"gida","amt":60000,"u":"USD","desc":"Covid + kuraklık + gıda yetersizliği: nakdi yardım."},{"id":125,"c":"Moğolistan","lat":46.9,"lng":103.8,"y":2021,"t":"sel","amt":40000,"u":"USD","desc":"Fırtına: 10 ölü, 100 bin hayvan telef. Nakdi yardım."},{"id":140,"c":"Nijer","lat":17.6,"lng":8.1,"y":2021,"t":"catisma","amt":40000,"u":"USD","desc":"Boko Haram mağdurları: çadır ve gıda."},{"id":150,"c":"Panama","lat":8.5,"lng":-80.8,"y":2021,"t":"sel","amt":40000,"u":"USD","desc":"Kasırga nakdi yardım."},{"id":173,"c":"Tacikistan","lat":38.9,"lng":71.3,"y":2021,"t":"sel","amt":20000,"u":"USD","desc":"Sel: nakdi + 100 bin kerpiç + 100 ton çimento."},{"id":186,"c":"Yemen","lat":15.6,"lng":48.5,"y":2021,"t":"gida","amt":393000,"u":"USD","desc":"Yardım + 30 çocuğa protez desteği."},{"id":205,"c":"KKTC","lat":35.25,"lng":33.4,"y":2021,"t":"deprem","amt":120,"u":"çadır","desc":"Gazi Mağusa depremi (5,0): Adana Lojistik Deposu'ndan 120 çadır deniz yoluyla gönderildi."},{"id":210,"c":"Saint Vincent ve Grenadinler","lat":13.25,"lng":-61.2,"y":2021,"t":"deprem","amt":20000,"u":"USD","desc":"Yanardağ patlaması sonrası halkın zor durumunu hafifletmek için nakdi destek."},{"id":211,"c":"Ekvator Ginesi","lat":1.65,"lng":10.3,"y":2021,"t":"catisma","amt":40000,"u":"USD","desc":"Bata'daki şiddetli patlamalar (98 ölü, 615 yaralı): insani yardım malzemesi temini için nakdi destek."},{"id":217,"c":"Filistin","lat":31.95,"lng":35.23,"y":2021,"t":"catisma","amt":3372,"u":"ton","desc":"UNRWA aracılığıyla 3.372 ton nohut ve 26.000 ton un sevkiyatı + hastaneler için nakdi destek."},{"id":218,"c":"Güney Sudan","lat":6.9,"lng":31.3,"y":2021,"t":"sel","amt":40000,"u":"USD","desc":"Sel sonrası zor durumdaki halk için nakdi yardım."},{"id":222,"c":"Irak","lat":33.2,"lng":43.7,"y":2021,"t":"catisma","amt":40000,"u":"USD","desc":"Yahyava Kampı'nın kapanması sonrası çadırlarda yaşayan aileler için nakdi destek."},{"id":229,"c":"Mozambik","lat":-18.7,"lng":35.5,"y":2021,"t":"sel","amt":60000,"u":"USD","desc":"Eloise fırtınası (176.000 kişi etkilendi) ve terör saldırıları sonrası nakdi destek."},{"id":238,"c":"Somali","lat":5.2,"lng":46.2,"y":2021,"t":"gida","amt":80000,"u":"USD","desc":"Jubaland bölgesinde ciddi kuraklık: ihtiyaçların giderilmesi için nakdi destek."},{"id":7,"c":"Afganistan","lat":33.93,"lng":67.71,"y":2022,"t":"deprem","amt":7695,"u":"ton","desc":"Badghis 5,3 depremi + 18 İyilik Treni (7.695 ton) — ~1.000.000 kişi."},{"id":22,"c":"Bangladeş","lat":23.68,"lng":90.35,"y":2022,"t":"saglik","amt":292801,"u":"poliklinik","desc":"292.801 poliklinik, 6.486 sünnet, 1.977 ameliyat."},{"id":31,"c":"Brezilya","lat":-14.2,"lng":-51.9,"y":2022,"t":"sel","amt":40000,"u":"USD","desc":"Bahia eyaleti sel: nakdi yardım."},{"id":54,"c":"Etiyopya","lat":9.1,"lng":40.5,"y":2022,"t":"catisma","amt":20000,"u":"USD","desc":"Tigray ateşkesi sonrası iyileştirme desteği."},{"id":70,"c":"Filistin","lat":31.95,"lng":35.23,"y":2022,"t":"gida","amt":13200,"u":"ton","desc":"26.000 ton un sevkiyatı (6 aşama), 13.200 ton tamamlandı."},{"id":93,"c":"İran","lat":32.4,"lng":53.7,"y":2022,"t":"sel","amt":180,"u":"çadır","desc":"Sel: 180 aile çadırı + 3.360 battaniye + 5 motopompa."},{"id":114,"c":"Lübnan","lat":33.85,"lng":35.86,"y":2022,"t":"gida","amt":3009,"u":"ton","desc":"5 gemi ile 3.009 ton gıda. ~164.700 aile."},{"id":127,"c":"Moldova","lat":47.4,"lng":28.4,"y":2022,"t":"catisma","amt":11,"u":"tır","desc":"Ukrayna savaşı nedeniyle geçen mülteciler: 5 AFAD + 6 Kızılay tır."},{"id":147,"c":"Pakistan","lat":30.4,"lng":69.3,"y":2022,"t":"sel","amt":9079,"u":"ton","desc":"30M+ etkilenen sel: 15 uçak + 13 İyilik Treni (7.222 ton) + 2 gemi."},{"id":175,"c":"Ukrayna","lat":49,"lng":31.2,"y":2022,"t":"catisma","amt":140,"u":"tır","desc":"Savaş: 140 tır + Siret sınırında 300.000 birim yardım. Mobil sağlık."},{"id":219,"c":"Güney Sudan","lat":6.9,"lng":31.3,"y":2022,"t":"catisma","amt":25000,"u":"USD","desc":"İç çatışmalarla yerinden edilen kamp sakinleri için nakdi yardım."},{"id":223,"c":"Irak","lat":33.2,"lng":43.7,"y":2022,"t":"sel","amt":40000,"u":"USD","desc":"Erbil sel felaketi sonrası nakdi yardım."},{"id":227,"c":"Madagaskar","lat":-18.8,"lng":47,"y":2022,"t":"sel","amt":20000,"u":"USD","desc":"Sel felaketi, can kayıpları ve altyapı hasarı sonrası nakdi yardım."},{"id":8,"c":"Afganistan","lat":33.93,"lng":67.71,"y":2023,"t":"deprem","amt":1012,"u":"ton","desc":"2 Herat depremi: hava köprüsü 38 ton. 19. İyilik Treni: 508 ton."},{"id":23,"c":"Bangladeş","lat":23.68,"lng":90.35,"y":2023,"t":"saglik","amt":160579,"u":"poliklinik","desc":"160.579 poliklinik, 2.353 sünnet, 2.209 ameliyat. Mocha Kasırgası onarımı."},{"id":42,"c":"Çad","lat":15.5,"lng":18.7,"y":2023,"t":"catisma","amt":1000,"u":"çadır","desc":"Sudan mültecileri için 1.000 gıda koli + 1.000 aile çadırı."},{"id":55,"c":"Etiyopya","lat":9.1,"lng":40.5,"y":2023,"t":"saglik","amt":20000,"u":"USD","desc":"Ayder Hastanesi desteği."},{"id":71,"c":"Filistin","lat":31.95,"lng":35.23,"y":2023,"t":"catisma","amt":34299,"u":"ton","desc":"12 uçak hava köprüsü + 3 gemi (3.235 ton) + 26.000 ton un UNRWA."},{"id":111,"c":"Libya","lat":26.3,"lng":17.2,"y":2023,"t":"sel","amt":1485,"u":"ton","desc":"Danyel Kasırgası: 4 uçak + 5 gemi, 649 personel, 2.505 çadır."},{"id":120,"c":"Malavi","lat":-13.3,"lng":34.3,"y":2023,"t":"sel","amt":20000,"u":"USD","desc":"Freddy Siklonu: nakdi yardım."},{"id":122,"c":"Meksika","lat":23.6,"lng":-102.5,"y":2023,"t":"sel","amt":25000,"u":"USD","desc":"Otis Kasırgası (Guerrero): nakdi yardım."},{"id":155,"c":"Sırbistan","lat":44,"lng":21,"y":2023,"t":"sel","amt":5,"u":"pompa","desc":"Yeni Pazar seli: 5 çamur pompası + 10 su pompası + 15 kurutucu."},{"id":165,"c":"Sri Lanka","lat":7.9,"lng":80.8,"y":2023,"t":"gida","amt":50000,"u":"USD","desc":"Tarihinin en büyük ekonomik krizi: 5,7 milyon kişi yardıma ihtiyaçlı."},{"id":176,"c":"Ukrayna","lat":49,"lng":31.2,"y":2023,"t":"catisma","amt":140221,"u":"sıcak yemek","desc":"Mobil mutfak: 140.221 kişiye sıcak yemek (Borodianka→Çernigiv)."},{"id":215,"c":"Bosna Hersek","lat":44.2,"lng":17.9,"y":2023,"t":"diger","amt":12,"u":"personel","desc":"Sava Nehri'ndeki arama çalışmalarına araç, ekipman ve 12 personelle katılım sağlandı."},{"id":236,"c":"Pakistan","lat":30.4,"lng":69.3,"y":2023,"t":"sel","amt":9079,"u":"ton","desc":"Hava köprüsü, 13 İyilik Treni ve 2 İyilik Gemisiyle toplam 9.079 ton yardım: 37.939 aile çadırı, 564.366 gıda/hijyen kolisi, 120.562 battaniye-yatak."},{"id":239,"c":"Somali","lat":5.2,"lng":46.2,"y":2023,"t":"sel","amt":50000,"u":"USD","desc":"Jubbaland'da sel baskınlarından etkilenen yüz binlerce kişi için nakdi destek."},{"id":9,"c":"Afganistan","lat":33.93,"lng":67.71,"y":2024,"t":"sel","amt":8822,"u":"ton","desc":"Kuzey sel: 24 ton havayolu + 20. ve 21. İyilik Treni. Kümülatif: 8.822 ton."},{"id":24,"c":"Bangladeş","lat":23.68,"lng":90.35,"y":2024,"t":"saglik","amt":123203,"u":"poliklinik","desc":"123.203 poliklinik, 2.028 ameliyat. Feni-Comilla seli için 5.000 acil paket."},{"id":29,"c":"Bosna Hersek","lat":44.2,"lng":17.9,"y":2024,"t":"sel","amt":60,"u":"konteyner ev","desc":"Sel: 60 konteyner ev, 96 jeneratör, 1.110 battaniye, 144 mutfak seti."},{"id":33,"c":"Bulgaristan","lat":42.7,"lng":25.5,"y":2024,"t":"yangin","amt":17,"u":"araç","desc":"Svilengrad orman yangını: 17 araç + 35 personel destek."},{"id":35,"c":"Burundi","lat":-3.4,"lng":29.9,"y":2024,"t":"sel","amt":48,"u":"aile barınak","desc":"Tanganika Gölü taşması: Mubimbi kampında 48 aile barınağı."},{"id":43,"c":"Çad","lat":15.5,"lng":18.7,"y":2024,"t":"sel","amt":1000,"u":"koli","desc":"Aşırı yağış: 1.000 gıda paketi."},{"id":46,"c":"Kongo Cumhuriyeti","lat":-0.7,"lng":15.8,"y":2024,"t":"sel","amt":32,"u":"ton","desc":"Sel: 28,5 ton gıda + 3,5 ton temizlik + 400 yatak."},{"id":49,"c":"El Salvador","lat":13.8,"lng":-88.9,"y":2024,"t":"sel","amt":20000,"u":"USD","desc":"Orta Amerika seli: 1.900+ kişi tahliye. Nakdi yardım."},{"id":72,"c":"Filistin","lat":31.95,"lng":35.23,"y":2024,"t":"catisma","amt":86593,"u":"ton","desc":"13 gemi (26.593 ton) + 60.013 ton un + 1.876 ton su."},{"id":76,"c":"Gambiya","lat":13.4,"lng":-15.3,"y":2024,"t":"saglik","amt":4,"u":"araç","desc":"2 itfaiye + 2 ambulans hibe gemi ile gönderildi."},{"id":94,"c":"İspanya","lat":40.46,"lng":-3.75,"y":2024,"t":"sel","amt":250,"u":"konteyner","desc":"Valencia seli: 250 atık konteyneri, 6 kişilik AFAD ekibi sahada."},{"id":100,"c":"Karayipler","lat":14,"lng":-72,"y":2024,"t":"sel","amt":50000,"u":"USD","desc":"Beryl Kasırgası: CARICOM'a nakdi yardım."},{"id":104,"c":"Küba","lat":21.5,"lng":-77.8,"y":2024,"t":"sel","amt":17,"u":"jeneratör","desc":"Oscar Kasırgası: 17 güneş panelli jeneratör sistemi."},{"id":115,"c":"Lübnan","lat":33.85,"lng":35.86,"y":2024,"t":"catisma","amt":300,"u":"ton","desc":"Saldırılar: 30 ton ilaç+gıda. 987 kişi tahliye. 300 ton malzeme."},{"id":118,"c":"Madagaskar","lat":-18.8,"lng":47,"y":2024,"t":"sel","amt":19890,"u":"USD","desc":"Gamane Kasırgası: nakdi yardım."},{"id":136,"c":"Namibya","lat":-22.9,"lng":18.5,"y":2024,"t":"gida","amt":20000,"u":"USD","desc":"Kuraklık olağanüstü hal: 20 ton mısır, yağ, balık, soya."},{"id":148,"c":"Pakistan","lat":30.4,"lng":69.3,"y":2024,"t":"saglik","amt":50000,"u":"maske","desc":"Lahore hava kirliliği: 50.000 N95 maske."},{"id":160,"c":"Somali","lat":5.2,"lng":46.2,"y":2024,"t":"sel","amt":2800,"u":"ton","desc":"El-Nino seli: GHADA gemisi 2.800 ton, 130.000 gıda koli."},{"id":168,"c":"Sudan","lat":12.86,"lng":30.22,"y":2024,"t":"catisma","amt":5408,"u":"ton","desc":"İç savaş + Arbaat Barajı felaketi: 2 gemi, 5.408 ton."},{"id":179,"c":"Vietnam","lat":14.1,"lng":108.3,"y":2024,"t":"sel","amt":50000,"u":"USD","desc":"Yagi Tayfunu + köprü yıkılması: nakdi yardım."},{"id":187,"c":"Yunanistan","lat":37.98,"lng":23.73,"y":2024,"t":"yangin","amt":3,"u":"hava aracı","desc":"Varnava orman yangını: 2 uçak + 1 helikopter + 7 personel."},{"id":188,"c":"Zambiya","lat":-13.1,"lng":27.8,"y":2024,"t":"saglik","amt":600,"u":"koli","desc":"El Nino kuraklık + kolera: 600 gıda paketi."},{"id":225,"c":"Libya","lat":26.3,"lng":17.2,"y":2024,"t":"saglik","amt":1,"u":"operasyon","desc":"Danyel Kasırgası sonrası gönderilen acil müdahale üniteleri ve seyyar hastanenin Türkiye'ye transferi."},{"id":10,"c":"Afganistan","lat":33.93,"lng":67.71,"y":2025,"t":"deprem","amt":11739,"u":"ton","desc":"21-24. İyilik Trenleri ve Celalabad 6,0 deprem yardımı. Kümülatif: 11.739 ton."},{"id":17,"c":"Arjantin","lat":-38.4,"lng":-63.6,"y":2025,"t":"sel","amt":20000,"u":"USD","desc":"Bahía Blanca sel: nüfusun %70'i etkilendi. Büyükelçilik yoluyla malzeme temini."},{"id":25,"c":"Bangladeş","lat":23.68,"lng":90.35,"y":2025,"t":"saglik","amt":1453108,"u":"poliklinik","desc":"Toplam 1.453.108 poliklinik, 14.753 ameliyat. 3.848 bambu ev."},{"id":30,"c":"Botsvana","lat":-22.3,"lng":24.7,"y":2025,"t":"sel","amt":20000,"u":"USD","desc":"Yoğun yağış, baraj taşması: gıda, battaniye, çadır yardımı."},{"id":36,"c":"Burundi","lat":-3.4,"lng":29.9,"y":2025,"t":"catisma","amt":200,"u":"yatak","desc":"KDC mülteci krizi: 200 yatak + malzeme."},{"id":48,"c":"Ekvador","lat":-1.8,"lng":-78.2,"y":2025,"t":"sel","amt":626,"u":"kit","desc":"Sel + orman yangınları: 626 ilk müdahale kiti + 900 koruyucu elbise."},{"id":73,"c":"Filistin","lat":31.95,"lng":35.23,"y":2025,"t":"catisma","amt":45000,"u":"ton","desc":"14–19. İyilik Gemisi + 30.000 ton un planı + branda + konteyner."},{"id":81,"c":"Güney Sudan","lat":6.9,"lng":31.3,"y":2025,"t":"gida","amt":20000,"u":"USD","desc":"Ramazan projesi: 10.000 aile gıda koli + 50.000 kişiye iftar."},{"id":95,"c":"İspanya","lat":40.46,"lng":-3.75,"y":2025,"t":"sel","amt":2,"u":"araç","desc":"2 yol temizleme aracı Valencia yerel yönetimine teslim."},{"id":98,"c":"Kamboçya","lat":12.6,"lng":104.99,"y":2025,"t":"catisma","amt":40000,"u":"USD","desc":"Tayland-Kamboçya çatışması: solar ışık, pirinç, konserve, cibinlik."},{"id":105,"c":"Küba","lat":21.5,"lng":-77.8,"y":2025,"t":"sel","amt":11,"u":"ton","desc":"Melissa Kasırgası (Küba+Jamaika): mutfak, jeneratör, barınma, hijyen."},{"id":135,"c":"Myanmar","lat":21.9,"lng":95.9,"y":2025,"t":"deprem","amt":500,"u":"koli","desc":"Sagaing depremi: 500 yardım koli + 65 çadır."},{"id":149,"c":"Pakistan","lat":30.4,"lng":69.3,"y":2025,"t":"saglik","amt":50000,"u":"maske","desc":"İlave 50.000 EN149 maske. Toplam 100.000 maske yardımı."},{"id":164,"c":"Somaliland","lat":9,"lng":46.2,"y":2025,"t":"gida","amt":420,"u":"aile","desc":"Çatışma + kuraklık: 420 aileye gıda koli."},{"id":169,"c":"Sudan","lat":12.86,"lng":30.22,"y":2025,"t":"catisma","amt":30000,"u":"çadır","desc":"30.000 çadır (3 gemi, IOM iş birliği) + yangın ekipmanı + 1.500 gıda koli."},{"id":37,"c":"Burundi","lat":-3.4,"lng":29.9,"y":2026,"t":"catisma","amt":20000,"u":"USD","desc":"KDC mülteci dalgası devam: acil müdahale çağrısı."},{"id":74,"c":"Filistin","lat":31.95,"lng":35.23,"y":2026,"t":"catisma","amt":4658,"u":"ton","desc":"20.–21. İyilik Gemisi (~4.658 ton) + UNRWA'ya nakdi destek."},{"id":116,"c":"Lübnan","lat":33.85,"lng":35.86,"y":2026,"t":"catisma","amt":50000,"u":"USD","desc":"Yerinden edilmeler devam: nakdi yardım."},{"id":119,"c":"Madagaskar","lat":-18.8,"lng":47,"y":2026,"t":"sel","amt":20000,"u":"USD","desc":"Gezani ve Fytia kasırgaları: nakdi yardım."},{"id":131,"c":"Mozambik","lat":-18.7,"lng":35.5,"y":2026,"t":"sel","amt":50000,"u":"USD","desc":"Sel felaketi: 682 bin kişi etkilendi, kolera riski. Nakdi yardım."},{"id":141,"c":"Nijerya","lat":9.1,"lng":8.7,"y":2026,"t":"gida","amt":50000,"u":"USD","desc":"Kuzeydoğu insani kriz: 4,8 milyon açlık riski."},{"id":161,"c":"Somali","lat":5.2,"lng":46.2,"y":2026,"t":"gida","amt":100000,"u":"USD","desc":"Kuraklık+istikrarsızlık devam. OCHA acil fon çağrısı."},{"id":170,"c":"Sudan","lat":12.86,"lng":30.22,"y":2026,"t":"catisma","amt":2600,"u":"ton","desc":"Katar-QFFD iş birliği: ~2.600 ton gıda/barınma/hijyen."}];
+const CINFO = {"Afganistan":["Afghanistan","af","Afghanistan"],"Arnavutluk":["Albania","al","Albania"],"Arjantin":["Argentina","ar","Argentina"],"Bangladeş":["Bangladesh","bd","Bangladesh"],"Bosna Hersek":["Bosnia and Herzegovina","ba","Bosnia and Herz."],"Botsvana":["Botswana","bw","Botswana"],"Brezilya":["Brazil","br","Brazil"],"Bulgaristan":["Bulgaria","bg","Bulgaria"],"Burkina Faso":["Burkina Faso","bf","Burkina Faso"],"Burundi":["Burundi","bi","Burundi"],"Cibuti":["Djibouti","dj","Djibouti"],"Çad":["Chad","td","Chad"],"Çin":["China","cn","China"],"Kongo Cumhuriyeti":["Republic of the Congo","cg","Congo"],"Demokratik Kongo Cumhuriyeti":["DR Congo","cd","Dem. Rep. Congo"],"Ekvador":["Ecuador","ec","Ecuador"],"El Salvador":["El Salvador","sv","El Salvador"],"Endonezya":["Indonesia","id","Indonesia"],"Etiyopya":["Ethiopia","et","Ethiopia"],"Fiji":["Fiji","fj","Fiji"],"Filipinler":["Philippines","ph","Philippines"],"Filistin":["Palestine","ps","Palestine"],"Gambiya":["Gambia","gm","Gambia"],"Gine":["Guinea","gn","Guinea"],"Guatemala":["Guatemala","gt","Guatemala"],"Güney Sudan":["South Sudan","ss","S. Sudan"],"Haiti":["Haiti","ht","Haiti"],"Hırvatistan":["Croatia","hr","Croatia"],"Honduras":["Honduras","hn","Honduras"],"Irak":["Iraq","iq","Iraq"],"İran":["Iran","ir","Iran"],"İspanya":["Spain","es","Spain"],"İsrail":["Israel","il","Israel"],"Japonya":["Japan","jp","Japan"],"Kamboçya":["Cambodia","kh","Cambodia"],"Kamerun":["Cameroon","cm","Cameroon"],"Karayipler":["Caribbean (CARICOM)",null,null],"Kırgızistan":["Kyrgyzstan","kg","Kyrgyzstan"],"Kolombiya":["Colombia","co","Colombia"],"Kosova":["Kosovo","xk","Kosovo"],"Küba":["Cuba","cu","Cuba"],"Laos":["Laos","la","Laos"],"Liberya":["Liberia","lr","Liberia"],"Libya":["Libya","ly","Libya"],"Lübnan":["Lebanon","lb","Lebanon"],"Madagaskar":["Madagascar","mg","Madagascar"],"Malavi":["Malawi","mw","Malawi"],"Malezya":["Malaysia","my","Malaysia"],"Meksika":["Mexico","mx","Mexico"],"Mısır":["Egypt","eg","Egypt"],"Moğolistan":["Mongolia","mn","Mongolia"],"Moldova":["Moldova","md","Moldova"],"Moritanya":["Mauritania","mr","Mauritania"],"Mozambik":["Mozambique","mz","Mozambique"],"Myanmar":["Myanmar","mm","Myanmar"],"Namibya":["Namibia","na","Namibia"],"Nepal":["Nepal","np","Nepal"],"Nijer":["Niger","ne","Niger"],"Nijerya":["Nigeria","ng","Nigeria"],"Özbekistan":["Uzbekistan","uz","Uzbekistan"],"Pakistan":["Pakistan","pk","Pakistan"],"Panama":["Panama","pa","Panama"],"Rusya":["Russia","ru","Russia"],"Senegal":["Senegal","sn","Senegal"],"Sierra Leone":["Sierra Leone","sl","Sierra Leone"],"Sırbistan":["Serbia","rs","Serbia"],"Somali":["Somalia","so","Somalia"],"Somaliland":["Somaliland",null,"Somaliland"],"Sri Lanka":["Sri Lanka","lk","Sri Lanka"],"Sudan":["Sudan","sd","Sudan"],"Şili":["Chile","cl","Chile"],"Tacikistan":["Tajikistan","tj","Tajikistan"],"Ukrayna":["Ukraine","ua","Ukraine"],"Vanuatu":["Vanuatu","vu","Vanuatu"],"Vietnam":["Vietnam","vn","Vietnam"],"Yemen":["Yemen","ye","Yemen"],"Yunanistan":["Greece","gr","Greece"],"Zambiya":["Zambia","zm","Zambia"],"İtalya":["Italy","it","Italy"],"Uganda":["Uganda","ug","Uganda"],"Tunus":["Tunisia","tn","Tunisia"],"KKTC":["TRNC (Northern Cyprus)",null,"N. Cyprus"],"Kuzey Makedonya":["North Macedonia","mk","Macedonia"],"Saint Vincent ve Grenadinler":["Saint Vincent and the Grenadines","vc","St. Vin. and Gren."],"Ekvator Ginesi":["Equatorial Guinea","gq","Eq. Guinea"]};      // ülke → [EN ad, bayrak ISO2, harita adı]
+const GEO = {"Afghanistan":{"type":"Polygon","coordinates":[[[66.52,37.36],[67.07,37.36],[67.83,37.15],[68.14,37.02],[68.86,37.34],[69.19,37.15],[69.52,37.61],[70.12,37.59],[70.27,37.73],[70.38,38.14],[70.81,38.49],[71.35,38.26],[71.24,37.95],[71.54,37.91],[71.45,37.07],[71.84,36.74],[72.19,36.95],[72.64,37.05],[73.26,37.5],[73.95,37.42],[74.98,37.42],[75.16,37.13],[74.58,37.02],[74.07,36.84],[72.92,36.72],[71.85,36.51],[71.26,36.07],[71.5,35.65],[71.61,35.15],[71.11,34.73],[71.16,34.35],[70.88,33.99],[69.93,34.02],[70.32,33.36],[69.69,33.11],[69.26,32.5],[69.32,31.9],[68.93,31.62],[68.56,31.71],[67.79,31.58],[67.68,31.3],[66.94,31.3],[66.38,30.74],[66.35,29.89],[65.05,29.47],[64.35,29.56],[64.15,29.34],[63.55,29.47],[62.55,29.32],[60.87,29.83],[61.78,30.74],[61.7,31.38],[60.94,31.55],[60.86,32.18],[60.54,32.98],[60.96,33.53],[60.53,33.68],[60.8,34.4],[61.21,35.65],[62.23,35.27],[62.98,35.4],[63.19,35.86],[63.98,36.01],[64.55,36.31],[64.74,37.11],[65.59,37.3],[65.75,37.66],[66.22,37.39],[66.52,37.36]]]},"Albania":{"type":"Polygon","coordinates":[[[21.02,40.84],[21,40.58],[20.67,40.44],[20.62,40.11],[20.15,39.63],[19.98,39.69],[19.96,39.91],[19.41,40.25],[19.32,40.73],[19.4,41.41],[19.54,41.72],[19.37,41.88],[19.31,42.2],[19.74,42.69],[19.8,42.5],[20.07,42.59],[20.28,42.32],[20.52,42.22],[20.59,41.86],[20.46,41.52],[20.6,41.09],[21.02,40.84]]]},"Argentina":{"type":"MultiPolygon","coordinates":[[[[-68.63,-52.64],[-68.25,-53.1],[-67.75,-53.85],[-66.45,-54.45],[-65.05,-54.7],[-65.5,-55.2],[-66.45,-55.25],[-66.96,-54.9],[-67.56,-54.87],[-68.63,-54.87],[-68.63,-52.64]]],[[[-57.62,-30.22],[-57.88,-31.02],[-58.14,-32.04],[-58.13,-33.04],[-58.35,-33.26],[-58.43,-33.91],[-58.5,-34.43],[-57.22,-35.29],[-57.36,-35.98],[-56.74,-36.41],[-56.79,-36.9],[-57.75,-38.18],[-59.23,-38.72],[-61.24,-38.93],[-62.34,-38.83],[-62.12,-39.42],[-62.33,-40.17],[-62.15,-40.68],[-62.75,-41.03],[-63.77,-41.17],[-64.73,-40.8],[-65.12,-41.06],[-64.98,-42.06],[-64.3,-42.36],[-63.75,-42.04],[-63.46,-42.56],[-64.38,-42.87],[-65.18,-43.49],[-65.33,-44.5],[-65.57,-45.04],[-66.51,-45.04],[-67.29,-45.55],[-67.58,-46.3],[-66.6,-47.03],[-65.64,-47.24],[-65.99,-48.13],[-67.17,-48.7],[-67.82,-49.87],[-68.73,-50.27],[-69.14,-50.73],[-68.82,-51.77],[-68.15,-52.35],[-68.57,-52.3],[-69.5,-52.14],[-71.92,-52.01],[-72.33,-51.43],[-72.31,-50.68],[-72.97,-50.74],[-73.33,-50.38],[-73.41,-49.32],[-72.65,-48.88],[-72.33,-48.24],[-72.45,-47.74],[-71.92,-46.88],[-71.55,-45.56],[-71.66,-44.97],[-71.22,-44.78],[-71.33,-44.41],[-71.79,-44.21],[-71.46,-43.79],[-71.92,-43.41],[-72.15,-42.25],[-71.75,-42.05],[-71.92,-40.83],[-71.68,-39.81],[-71.41,-38.92],[-70.81,-38.55],[-71.12,-37.58],[-71.12,-36.66],[-70.36,-36.01],[-70.39,-35.17],[-69.82,-34.19],[-69.81,-33.27],[-70.07,-33.09],[-70.53,-31.36],[-69.92,-30.34],[-70.02,-29.37],[-69.66,-28.46],[-69,-27.52],[-68.29,-26.9],[-68.59,-26.51],[-68.38,-26.18],[-68.42,-24.52],[-67.33,-24.03],[-66.98,-22.99],[-67.11,-22.74],[-66.27,-21.83],[-64.96,-22.08],[-64.38,-22.8],[-63.99,-21.99],[-62.85,-22.03],[-62.69,-22.25],[-60.85,-23.88],[-60.03,-24.03],[-58.81,-24.77],[-57.78,-25.16],[-57.63,-25.6],[-58.62,-27.12],[-57.61,-27.4],[-56.49,-27.55],[-55.69,-27.39],[-54.79,-26.62],[-54.63,-25.74],[-54.13,-25.55],[-53.63,-26.12],[-53.65,-26.92],[-54.49,-27.47],[-55.16,-27.88],[-56.29,-28.85],[-57.62,-30.22]]]]},"Bangladesh":{"type":"Polygon","coordinates":[[[92.67,22.04],[92.65,21.32],[92.3,21.48],[92.37,20.67],[92.08,21.19],[92.03,21.7],[91.84,22.18],[91.42,22.77],[90.5,22.8],[90.59,22.39],[90.27,21.84],[89.85,22.04],[89.7,21.86],[89.42,21.97],[89.03,22.06],[88.88,22.88],[88.53,23.63],[88.7,24.23],[88.08,24.5],[88.31,24.87],[88.93,25.24],[88.21,25.77],[88.56,26.45],[89.35,26.02],[89.83,25.96],[89.92,25.27],[90.87,25.13],[91.8,25.15],[92.38,24.98],[91.91,24.13],[91.47,24.07],[91.16,23.5],[91.71,22.99],[91.87,23.62],[92.14,23.63],[92.67,22.04]]]},"Bosnia and Herz.":{"type":"Polygon","coordinates":[[[18.56,42.65],[17.67,43.03],[17.3,43.45],[16.91,43.67],[16.46,44.04],[16.24,44.35],[15.75,44.82],[15.96,45.23],[16.32,45],[16.53,45.21],[17,45.23],[17.86,45.07],[18.55,45.08],[19.01,44.86],[19.37,44.86],[19.12,44.42],[19.6,44.04],[19.45,43.57],[19.22,43.52],[19.03,43.43],[18.71,43.2],[18.56,42.65]]]},"Botswana":{"type":"Polygon","coordinates":[[[29.43,-22.09],[28.02,-22.83],[27.12,-23.58],[26.79,-24.24],[26.49,-24.62],[25.94,-24.7],[25.77,-25.17],[25.67,-25.49],[25.03,-25.72],[24.21,-25.67],[23.73,-25.39],[23.31,-25.27],[22.83,-25.5],[22.58,-25.98],[22.11,-26.28],[21.61,-26.73],[20.89,-26.83],[20.67,-26.48],[20.76,-25.87],[20.17,-24.92],[19.9,-24.77],[19.9,-21.85],[20.88,-21.81],[20.91,-18.25],[21.66,-18.22],[23.2,-17.87],[23.58,-18.28],[24.22,-17.89],[24.52,-17.89],[25.08,-17.66],[25.26,-17.74],[25.65,-18.54],[25.85,-18.71],[26.16,-19.29],[27.3,-20.39],[27.73,-20.5],[27.73,-20.85],[28.02,-21.49],[28.79,-21.64],[29.43,-22.09]]]},"Brazil":{"type":"Polygon","coordinates":[[[-53.37,-33.77],[-53.65,-33.2],[-53.21,-32.73],[-53.79,-32.05],[-54.57,-31.49],[-55.6,-30.85],[-55.97,-30.88],[-56.98,-30.11],[-57.62,-30.22],[-56.29,-28.85],[-55.16,-27.88],[-54.49,-27.47],[-53.65,-26.92],[-53.63,-26.12],[-54.13,-25.55],[-54.63,-25.74],[-54.43,-25.16],[-54.29,-24.57],[-54.29,-24.02],[-54.65,-23.84],[-55.03,-24],[-55.4,-23.96],[-55.52,-23.57],[-55.61,-22.66],[-55.8,-22.36],[-56.47,-22.09],[-56.88,-22.28],[-57.94,-22.09],[-57.87,-20.73],[-58.17,-20.18],[-57.85,-19.97],[-57.95,-19.4],[-57.67,-18.96],[-57.5,-18.17],[-57.74,-17.55],[-58.28,-17.27],[-58.39,-16.88],[-58.24,-16.3],[-60.16,-16.26],[-60.54,-15.09],[-60.25,-15.08],[-60.26,-14.65],[-60.46,-14.35],[-60.5,-13.78],[-61.08,-13.48],[-61.71,-13.49],[-62.13,-13.2],[-62.8,-13],[-63.2,-12.63],[-64.32,-12.46],[-65.4,-11.57],[-65.32,-10.9],[-65.44,-10.51],[-65.34,-9.76],[-66.65,-9.93],[-67.17,-10.31],[-68.05,-10.71],[-68.27,-11.01],[-68.79,-11.04],[-69.53,-10.95],[-70.09,-11.12],[-70.55,-11.01],[-70.48,-9.49],[-71.3,-10.08],[-72.19,-10.05],[-72.56,-9.52],[-73.23,-9.46],[-73.01,-9.03],[-73.57,-8.42],[-73.99,-7.52],[-73.72,-7.34],[-73.72,-6.92],[-73.12,-6.63],[-73.22,-6.09],[-72.96,-5.74],[-72.89,-5.28],[-71.75,-4.59],[-70.93,-4.4],[-70.8,-4.25],[-69.89,-4.3],[-69.44,-1.56],[-69.42,-1.12],[-69.58,-0.55],[-70.02,-0.19],[-70.02,0.54],[-69.45,0.71],[-69.25,0.6],[-69.22,0.99],[-69.8,1.09],[-69.82,1.72],[-67.87,1.69],[-67.54,2.04],[-67.26,1.72],[-67.06,1.13],[-66.88,1.25],[-66.33,0.72],[-65.55,0.79],[-65.35,1.1],[-64.61,1.33],[-64.2,1.49],[-64.08,1.92],[-63.37,2.2],[-63.42,2.41],[-64.27,2.5],[-64.41,3.13],[-64.37,3.8],[-64.82,4.06],[-64.63,4.15],[-63.89,4.02],[-63.09,3.77],[-62.8,4.01],[-62.08,4.16],[-60.97,4.54],[-60.6,4.92],[-60.73,5.2],[-60.21,5.24],[-59.98,5.01],[-60.11,4.58],[-59.77,4.42],[-59.54,3.96],[-59.82,3.61],[-59.97,2.76],[-59.72,2.25],[-59.65,1.79],[-59.03,1.32],[-58.54,1.27],[-58.43,1.46],[-58.11,1.51],[-57.66,1.68],[-57.34,1.95],[-56.78,1.86],[-56.54,1.9],[-56,1.82],[-55.91,2.02],[-56.07,2.22],[-55.97,2.51],[-55.57,2.42],[-55.1,2.52],[-54.52,2.31],[-54.09,2.11],[-53.78,2.38],[-53.56,2.33],[-53.42,2.05],[-52.94,2.12],[-52.56,2.5],[-52.25,3.24],[-51.66,4.16],[-51.32,4.2],[-51.07,3.65],[-50.51,1.9],[-49.97,1.74],[-49.95,1.05],[-50.7,0.22],[-50.39,-0.08],[-48.62,-0.23],[-48.58,-1.24],[-47.82,-0.58],[-46.57,-0.94],[-44.91,-1.55],[-44.42,-2.14],[-44.58,-2.69],[-43.42,-2.38],[-41.47,-2.91],[-39.98,-2.87],[-38.5,-3.7],[-37.22,-4.82],[-36.45,-5.11],[-35.6,-5.15],[-35.24,-5.46],[-34.9,-6.74],[-34.73,-7.34],[-35.13,-9],[-35.64,-9.65],[-37.05,-11.04],[-37.68,-12.17],[-38.42,-13.04],[-38.67,-13.06],[-38.95,-13.79],[-38.88,-15.67],[-39.16,-17.21],[-39.27,-17.87],[-39.58,-18.26],[-39.76,-19.6],[-40.78,-20.9],[-40.95,-21.94],[-41.76,-22.37],[-41.99,-22.97],[-43.08,-22.97],[-44.65,-23.35],[-45.35,-23.8],[-46.47,-24.09],[-47.65,-24.89],[-48.49,-25.88],[-48.64,-26.62],[-48.48,-27.18],[-48.66,-28.19],[-48.89,-28.67],[-49.59,-29.22],[-50.7,-30.99],[-51.58,-31.78],[-52.26,-32.25],[-52.71,-33.2],[-53.37,-33.77]]]},"Bulgaria":{"type":"Polygon","coordinates":[[[22.66,44.24],[22.94,43.82],[23.33,43.9],[24.1,43.74],[25.57,43.69],[26.07,43.94],[27.24,44.18],[27.97,43.81],[28.56,43.71],[28.04,43.29],[27.68,42.58],[28,42.01],[27.14,42.14],[26.12,41.83],[26.11,41.33],[25.2,41.23],[24.49,41.58],[23.69,41.31],[22.95,41.34],[22.88,42],[22.38,42.32],[22.55,42.46],[22.44,42.58],[22.61,42.9],[22.98,43.21],[22.5,43.64],[22.41,44.01],[22.66,44.24]]]},"Burkina Faso":{"type":"Polygon","coordinates":[[[-5.41,10.37],[-5.47,10.95],[-5.2,11.37],[-5.22,11.71],[-4.43,12.54],[-4.28,13.23],[-4.01,13.47],[-3.52,13.34],[-3.11,13.54],[-2.97,13.8],[-2.19,14.25],[-2,14.56],[-1.07,14.97],[-0.52,15.12],[-0.26,14.92],[0.38,14.93],[0.3,14.44],[0.43,13.99],[0.99,13.34],[1.02,12.85],[2.18,12.63],[2.15,11.94],[1.94,11.64],[1.45,11.55],[1.24,11.11],[0.9,11],[0.02,11.02],[-0.44,11.1],[-0.76,10.94],[-1.2,11.01],[-2.94,10.96],[-2.96,10.39],[-2.83,9.64],[-3.51,9.9],[-3.98,9.86],[-4.33,9.61],[-4.78,9.82],[-4.96,10.15],[-5.41,10.37]]]},"Burundi":{"type":"Polygon","coordinates":[[[30.47,-2.41],[30.53,-2.81],[30.74,-3.03],[30.75,-3.36],[30.5,-3.57],[30.12,-4.09],[29.75,-4.45],[29.34,-4.5],[29.28,-3.29],[29.03,-2.84],[29.63,-2.92],[29.94,-2.35],[30.47,-2.41]]]},"Cambodia":{"type":"Polygon","coordinates":[[[102.58,12.19],[102.35,13.39],[102.99,14.23],[104.28,14.42],[105.22,14.27],[106.04,13.88],[106.5,14.57],[107.38,14.2],[107.61,13.54],[107.49,12.34],[105.81,11.57],[106.25,10.96],[105.2,10.89],[104.33,10.49],[103.5,10.63],[103.09,11.15],[102.58,12.19]]]},"Cameroon":{"type":"Polygon","coordinates":[[[14.5,12.86],[14.9,12.22],[14.96,11.56],[14.92,10.89],[15.47,9.98],[14.91,9.99],[14.63,9.92],[14.17,10.02],[13.96,9.55],[14.55,8.97],[14.98,8.8],[15.12,8.38],[15.44,7.69],[15.28,7.42],[14.78,6.41],[14.54,6.23],[14.46,5.45],[14.56,5.03],[14.48,4.73],[14.95,4.21],[15.04,3.85],[15.41,3.33],[15.86,3.01],[15.91,2.56],[16.01,2.27],[15.94,1.73],[15.15,1.96],[14.34,2.23],[13.08,2.27],[12.95,2.32],[12.36,2.19],[11.75,2.33],[11.28,2.26],[9.65,2.28],[9.79,3.07],[9.41,3.73],[8.95,3.9],[8.75,4.35],[8.49,4.5],[8.5,4.77],[8.76,5.48],[9.23,6.44],[9.52,6.45],[10.12,7.04],[10.5,7.06],[11.06,6.64],[11.75,6.98],[11.84,7.4],[12.07,7.8],[12.22,8.31],[12.75,8.72],[12.95,9.42],[13.17,9.64],[13.31,10.16],[13.57,10.8],[14.42,11.57],[14.47,11.9],[14.58,12.09],[14.18,12.48],[14.21,12.8],[14.5,12.86]]]},"Chad":{"type":"Polygon","coordinates":[[[23.84,19.58],[23.89,15.61],[23.02,15.68],[22.57,14.94],[22.3,14.33],[22.51,14.09],[22.18,13.79],[22.3,13.37],[22.04,12.96],[21.94,12.59],[22.29,12.65],[22.5,12.26],[22.51,11.68],[22.88,11.38],[22.87,11.14],[22.23,10.97],[21.72,10.57],[21,9.48],[20.06,9.01],[19.09,9.07],[18.81,8.98],[18.91,8.63],[18.39,8.28],[17.97,7.89],[16.71,7.51],[16.46,7.74],[16.29,7.75],[16.1,7.5],[15.28,7.42],[15.44,7.69],[15.12,8.38],[14.98,8.8],[14.55,8.97],[13.96,9.55],[14.17,10.02],[14.63,9.92],[14.91,9.99],[15.47,9.98],[14.92,10.89],[14.96,11.56],[14.9,12.22],[14.5,12.86],[14.6,13.33],[13.96,13.35],[13.96,14],[13.54,14.37],[13.97,15.68],[15.25,16.63],[15.3,17.93],[15.69,19.96],[15.9,20.39],[15.49,20.73],[15.47,21.05],[15.1,21.31],[14.85,22.86],[15.86,23.41],[19.85,21.49],[23.84,19.58]]]},"Chile":{"type":"MultiPolygon","coordinates":[[[[-68.63,-52.64],[-68.63,-54.87],[-67.56,-54.87],[-66.96,-54.9],[-67.29,-55.3],[-68.15,-55.61],[-68.64,-55.58],[-69.23,-55.5],[-69.96,-55.2],[-71.01,-55.05],[-72.27,-54.49],[-73.28,-53.96],[-74.66,-52.84],[-73.84,-53.05],[-72.43,-53.72],[-71.11,-54.07],[-70.59,-53.62],[-70.27,-52.93],[-69.35,-52.52],[-68.63,-52.64]]],[[[-69.59,-17.58],[-69.1,-18.26],[-68.97,-18.98],[-68.44,-19.4],[-68.76,-20.37],[-68.22,-21.49],[-67.83,-22.87],[-67.11,-22.74],[-66.98,-22.99],[-67.33,-24.03],[-68.42,-24.52],[-68.38,-26.18],[-68.59,-26.51],[-68.29,-26.9],[-69,-27.52],[-69.66,-28.46],[-70.02,-29.37],[-69.92,-30.34],[-70.53,-31.36],[-70.07,-33.09],[-69.81,-33.27],[-69.82,-34.19],[-70.39,-35.17],[-70.36,-36.01],[-71.12,-36.66],[-71.12,-37.58],[-70.81,-38.55],[-71.41,-38.92],[-71.68,-39.81],[-71.92,-40.83],[-71.75,-42.05],[-72.15,-42.25],[-71.92,-43.41],[-71.46,-43.79],[-71.79,-44.21],[-71.33,-44.41],[-71.22,-44.78],[-71.66,-44.97],[-71.55,-45.56],[-71.92,-46.88],[-72.45,-47.74],[-72.33,-48.24],[-72.65,-48.88],[-73.41,-49.32],[-73.33,-50.38],[-72.97,-50.74],[-72.31,-50.68],[-72.33,-51.43],[-71.92,-52.01],[-69.5,-52.14],[-68.57,-52.3],[-69.46,-52.29],[-69.94,-52.54],[-70.84,-52.9],[-71.01,-53.83],[-71.43,-53.86],[-72.56,-53.53],[-73.7,-52.83],[-74.95,-52.26],[-75.26,-51.63],[-74.98,-51.04],[-75.48,-50.38],[-75.61,-48.67],[-75.18,-47.71],[-74.13,-46.94],[-75.65,-46.65],[-74.69,-45.76],[-74.35,-44.1],[-73.24,-44.45],[-72.72,-42.38],[-73.39,-42.12],[-73.7,-43.37],[-74.33,-43.23],[-74.02,-41.8],[-73.68,-39.94],[-73.22,-39.26],[-73.51,-38.28],[-73.59,-37.16],[-73.17,-37.12],[-72.55,-35.51],[-71.86,-33.91],[-71.44,-32.42],[-71.67,-30.92],[-71.37,-30.1],[-71.49,-28.86],[-70.9,-27.64],[-70.72,-25.71],[-70.4,-23.63],[-70.09,-21.39],[-70.16,-19.76],[-70.37,-18.35],[-69.86,-18.09],[-69.59,-17.58]]]]},"China":{"type":"MultiPolygon","coordinates":[[[[109.48,18.2],[108.65,18.51],[108.63,19.37],[109.12,19.82],[110.21,20.1],[110.79,20.08],[111.01,19.7],[110.57,19.26],[110.34,18.68],[109.48,18.2]]],[[[80.26,42.35],[80.18,42.92],[80.87,43.18],[79.97,44.92],[81.95,45.32],[82.46,45.54],[83.18,47.33],[85.16,47],[85.72,47.45],[85.77,48.46],[86.6,48.55],[87.36,49.22],[87.75,49.3],[88.02,48.6],[88.85,48.07],[90.28,47.69],[90.97,46.89],[90.59,45.72],[90.95,45.29],[92.13,45.12],[93.48,44.98],[94.69,44.35],[95.31,44.24],[95.76,43.32],[96.35,42.73],[97.45,42.75],[99.52,42.52],[100.85,42.66],[101.83,42.51],[103.31,41.91],[104.52,41.91],[104.96,41.6],[106.13,42.14],[107.74,42.48],[109.24,42.52],[110.41,42.87],[111.13,43.41],[111.83,43.74],[111.67,44.07],[111.35,44.46],[111.87,45.1],[112.43,45.01],[113.46,44.81],[114.46,45.34],[115.98,45.73],[116.72,46.39],[117.42,46.67],[118.87,46.8],[119.66,46.69],[119.77,47.05],[118.87,47.75],[118.06,48.07],[117.29,47.7],[116.31,47.85],[115.74,47.73],[115.48,48.14],[116.19,49.13],[116.68,49.89],[117.88,49.51],[119.29,50.14],[119.28,50.58],[120.18,51.64],[120.74,51.96],[120.73,52.52],[120.18,52.75],[121,53.25],[122.24,53.43],[123.57,53.46],[125.07,53.16],[125.95,52.79],[126.56,51.78],[126.94,51.35],[127.29,50.74],[127.66,49.76],[129.4,49.44],[130.58,48.73],[130.99,47.79],[132.51,47.79],[133.37,48.18],[135.02,48.48],[134.5,47.58],[134.11,47.21],[133.77,46.12],[133.1,45.14],[131.88,45.32],[131.03,44.97],[131.29,44.11],[131.14,42.93],[130.63,42.9],[130.64,42.4],[130,42.98],[129.6,42.42],[128.05,41.99],[128.21,41.47],[127.34,41.5],[126.87,41.82],[126.18,41.11],[125.08,40.57],[124.26,39.93],[122.87,39.64],[122.13,39.17],[121.05,38.9],[121.59,39.36],[121.38,39.75],[122.17,40.42],[121.64,40.95],[120.77,40.59],[119.64,39.9],[119.02,39.25],[118.04,39.2],[117.53,38.74],[118.06,38.06],[118.88,37.9],[118.91,37.45],[119.7,37.16],[120.82,37.87],[121.71,37.48],[122.36,37.46],[122.52,36.93],[121.1,36.65],[120.64,36.11],[119.66,35.61],[119.15,34.91],[120.23,34.36],[120.62,33.38],[121.23,32.46],[121.91,31.69],[121.89,30.95],[121.27,30.68],[121.5,30.14],[122.09,29.83],[121.94,29.02],[121.68,28.23],[121.13,28.14],[120.39,27.05],[119.58,25.74],[118.66,24.55],[117.28,23.63],[115.89,22.78],[114.76,22.67],[114.15,22.22],[113.81,22.55],[113.24,22.05],[111.84,21.55],[110.79,21.4],[110.44,20.34],[109.89,20.28],[109.63,21.01],[109.86,21.39],[108.52,21.71],[108.05,21.55],[107.04,21.81],[106.57,22.22],[106.72,22.79],[105.81,22.98],[105.33,23.35],[104.48,22.82],[103.5,22.7],[102.71,22.71],[102.17,22.46],[101.65,22.32],[101.8,21.17],[101.27,21.2],[101.18,21.44],[101.15,21.85],[100.42,21.56],[99.98,21.74],[99.24,22.12],[99.53,22.95],[98.9,23.14],[98.66,24.06],[97.61,23.9],[97.72,25.08],[98.67,25.92],[98.71,26.74],[98.68,27.51],[98.25,27.75],[97.91,28.34],[97.33,28.26],[96.25,28.41],[96.59,28.83],[96.12,29.45],[95.41,29.03],[94.57,29.28],[93.41,28.64],[92.5,27.9],[91.7,27.77],[91.26,28.04],[90.73,28.06],[90.02,28.3],[89.48,28.04],[88.81,27.3],[88.73,28.09],[88.12,27.88],[86.95,27.97],[85.82,28.2],[85.01,28.64],[84.24,28.84],[83.9,29.32],[83.34,29.46],[82.33,30.11],[81.52,30.42],[81.11,30.18],[79.72,30.88],[78.74,31.52],[78.46,32.62],[79.18,32.48],[79.21,32.99],[78.81,33.51],[78.91,34.32],[77.84,35.49],[76.19,35.9],[75.9,36.67],[75.16,37.13],[74.98,37.42],[74.83,37.99],[74.86,38.38],[74.26,38.61],[73.93,38.51],[73.68,39.43],[73.96,39.66],[73.82,39.89],[74.78,40.37],[75.47,40.56],[76.53,40.43],[76.91,41.07],[78.19,41.19],[78.54,41.58],[80.12,42.12],[80.26,42.35]]]]},"Colombia":{"type":"Polygon","coordinates":[[[-66.88,1.25],[-67.06,1.13],[-67.26,1.72],[-67.54,2.04],[-67.87,1.69],[-69.82,1.72],[-69.8,1.09],[-69.22,0.99],[-69.25,0.6],[-69.45,0.71],[-70.02,0.54],[-70.02,-0.19],[-69.58,-0.55],[-69.42,-1.12],[-69.44,-1.56],[-69.89,-4.3],[-70.39,-3.77],[-70.69,-3.74],[-70.05,-2.72],[-70.81,-2.26],[-71.41,-2.34],[-71.78,-2.17],[-72.33,-2.44],[-73.07,-2.31],[-73.66,-1.26],[-74.12,-1],[-74.44,-0.53],[-75.11,-0.06],[-75.37,-0.15],[-75.8,0.09],[-76.29,0.42],[-76.58,0.26],[-77.42,0.39],[-77.67,0.83],[-77.86,0.81],[-78.86,1.38],[-78.99,1.69],[-78.62,1.77],[-78.66,2.27],[-78.43,2.63],[-77.93,2.7],[-77.51,3.32],[-77.13,3.85],[-77.5,4.09],[-77.31,4.67],[-77.53,5.58],[-77.32,5.84],[-77.48,6.69],[-77.88,7.22],[-77.75,7.71],[-77.43,7.64],[-77.24,7.94],[-77.47,8.52],[-77.35,8.67],[-76.84,8.64],[-76.08,9.34],[-75.67,9.44],[-75.66,9.77],[-75.48,10.62],[-74.91,11.08],[-74.28,11.1],[-74.2,11.31],[-73.41,11.23],[-72.63,11.73],[-72.24,11.96],[-71.75,12.44],[-71.4,12.38],[-71.14,12.11],[-71.33,11.78],[-71.97,11.61],[-72.23,11.11],[-72.61,10.82],[-72.91,10.45],[-73.03,9.74],[-73.31,9.15],[-72.79,9.08],[-72.66,8.63],[-72.44,8.41],[-72.36,8],[-72.48,7.63],[-72.45,7.42],[-72.2,7.34],[-71.96,6.99],[-70.67,7.09],[-70.09,6.96],[-69.39,6.1],[-68.99,6.21],[-68.27,6.15],[-67.7,6.27],[-67.34,6.1],[-67.52,5.56],[-67.74,5.22],[-67.82,4.5],[-67.62,3.84],[-67.34,3.54],[-67.3,3.32],[-67.81,2.82],[-67.45,2.6],[-67.18,2.25],[-66.88,1.25]]]},"Congo":{"type":"Polygon","coordinates":[[[18.45,3.5],[18.39,2.9],[18.1,2.37],[17.9,1.74],[17.78,0.86],[17.83,0.29],[17.66,-0.06],[17.64,-0.42],[17.52,-0.74],[16.86,-1.23],[16.41,-1.74],[15.97,-2.71],[16.01,-3.54],[15.75,-3.86],[15.17,-4.34],[14.58,-4.97],[14.21,-4.79],[14.15,-4.51],[13.6,-4.5],[13.26,-4.88],[12.99,-4.78],[12.62,-4.44],[12.32,-4.61],[11.91,-5.04],[11.09,-3.98],[11.86,-3.43],[11.48,-2.77],[11.82,-2.51],[12.49,-2.39],[12.58,-1.95],[13.11,-2.43],[13.99,-2.47],[14.3,-2],[14.43,-1.33],[14.32,-0.55],[13.84,0.04],[14.28,1.2],[14.03,1.4],[13.28,1.31],[13,1.83],[13.08,2.27],[14.34,2.23],[15.15,1.96],[15.94,1.73],[16.01,2.27],[16.54,3.2],[17.13,3.73],[17.81,3.56],[18.45,3.5]]]},"Croatia":{"type":"Polygon","coordinates":[[[16.57,46.5],[16.88,46.38],[17.63,45.95],[18.46,45.76],[18.83,45.91],[19.07,45.52],[19.39,45.24],[19.01,44.86],[18.55,45.08],[17.86,45.07],[17,45.23],[16.53,45.21],[16.32,45],[15.96,45.23],[15.75,44.82],[16.24,44.35],[16.46,44.04],[16.91,43.67],[17.3,43.45],[17.67,43.03],[18.56,42.65],[18.45,42.48],[17.51,42.85],[16.93,43.21],[16.01,43.51],[15.18,44.24],[15.38,44.32],[14.92,44.74],[14.9,45.08],[14.26,45.23],[13.95,44.8],[13.66,45.14],[13.68,45.48],[13.71,45.5],[14.41,45.47],[14.6,45.64],[14.93,45.47],[15.33,45.45],[15.32,45.73],[15.67,45.83],[15.77,46.24],[16.57,46.5]]]},"Cuba":{"type":"Polygon","coordinates":[[[-82.27,23.19],[-81.41,23.12],[-80.62,23.11],[-79.68,22.77],[-79.28,22.4],[-78.35,22.51],[-77.99,22.28],[-77.15,21.66],[-76.52,21.21],[-76.19,21.22],[-75.6,21.02],[-75.67,20.73],[-74.93,20.69],[-74.18,20.28],[-74.3,20.05],[-74.96,19.92],[-75.63,19.87],[-76.32,19.95],[-77.76,19.86],[-77.09,20.41],[-77.49,20.67],[-78.14,20.74],[-78.48,21.03],[-78.72,21.6],[-79.29,21.56],[-80.22,21.83],[-80.52,22.04],[-81.82,22.19],[-82.17,22.39],[-81.79,22.64],[-82.78,22.69],[-83.49,22.17],[-83.91,22.15],[-84.05,21.91],[-84.55,21.8],[-84.97,21.9],[-84.45,22.21],[-84.23,22.57],[-83.78,22.79],[-83.27,22.98],[-82.51,23.08],[-82.27,23.19]]]},"Dem. Rep. Congo":{"type":"Polygon","coordinates":[[[29.34,-4.5],[29.52,-5.42],[29.42,-5.94],[29.62,-6.52],[30.2,-7.08],[30.74,-8.34],[30.35,-8.24],[29,-8.41],[28.73,-8.53],[28.45,-9.16],[28.67,-9.61],[28.5,-10.79],[28.37,-11.79],[28.64,-11.97],[29.34,-12.36],[29.62,-12.18],[29.7,-13.26],[28.94,-13.25],[28.52,-12.7],[28.15,-12.27],[27.39,-12.13],[27.16,-11.61],[26.55,-11.93],[25.75,-11.78],[25.42,-11.33],[24.78,-11.24],[24.31,-11.26],[24.26,-10.95],[23.91,-10.93],[23.46,-10.87],[22.84,-11.02],[22.4,-10.99],[22.16,-11.08],[22.21,-9.89],[21.88,-9.52],[21.8,-8.91],[21.95,-8.31],[21.75,-7.92],[21.73,-7.29],[20.51,-7.3],[20.6,-6.94],[20.09,-6.94],[20.04,-7.12],[19.42,-7.16],[19.17,-7.74],[19.02,-7.99],[18.46,-7.85],[18.14,-7.99],[17.47,-8.07],[17.09,-7.54],[16.86,-7.22],[16.57,-6.62],[16.33,-5.88],[13.38,-5.86],[13.02,-5.98],[12.74,-5.97],[12.32,-6.1],[12.18,-5.79],[12.44,-5.68],[12.47,-5.25],[12.63,-4.99],[12.99,-4.78],[13.26,-4.88],[13.6,-4.5],[14.15,-4.51],[14.21,-4.79],[14.58,-4.97],[15.17,-4.34],[15.75,-3.86],[16.01,-3.54],[15.97,-2.71],[16.41,-1.74],[16.86,-1.23],[17.52,-0.74],[17.64,-0.42],[17.66,-0.06],[17.83,0.29],[17.78,0.86],[17.9,1.74],[18.1,2.37],[18.39,2.9],[18.45,3.5],[18.54,4.2],[18.93,4.71],[19.47,5.03],[20.29,4.69],[20.93,4.32],[21.66,4.22],[22.4,4.03],[22.7,4.63],[22.84,4.71],[23.3,4.61],[24.41,5.11],[24.81,4.9],[25.13,4.93],[25.28,5.17],[25.65,5.26],[26.4,5.15],[27.05,5.13],[27.37,5.23],[27.98,4.41],[28.43,4.29],[28.7,4.46],[29.16,4.39],[29.72,4.6],[29.95,4.17],[30.83,3.51],[30.77,2.34],[31.17,2.2],[30.85,1.85],[30.47,1.58],[30.09,1.06],[29.87,0.6],[29.82,-0.21],[29.59,-0.59],[29.58,-1.34],[29.29,-1.62],[29.26,-2.21],[29.12,-2.29],[29.03,-2.84],[29.28,-3.29],[29.34,-4.5]]]},"Djibouti":{"type":"Polygon","coordinates":[[[42.35,12.54],[42.78,12.46],[43.08,12.7],[43.32,12.39],[43.29,11.98],[42.72,11.74],[43.14,11.46],[42.78,10.93],[42.55,11.11],[42.31,11.03],[41.76,11.05],[41.74,11.36],[41.66,11.63],[42,12.1],[42.35,12.54]]]},"Ecuador":{"type":"Polygon","coordinates":[[[-75.37,-0.15],[-75.24,-0.91],[-75.54,-1.56],[-76.64,-2.61],[-77.84,-3],[-78.45,-3.87],[-78.64,-4.55],[-79.21,-4.96],[-79.62,-4.45],[-80.03,-4.35],[-80.44,-4.43],[-80.47,-4.06],[-80.19,-3.82],[-80.3,-3.4],[-79.77,-2.66],[-79.99,-2.22],[-80.37,-2.69],[-80.97,-2.25],[-80.77,-1.96],[-80.93,-1.06],[-80.59,-0.91],[-80.4,-0.28],[-80.02,0.36],[-80.09,0.77],[-79.54,0.98],[-78.86,1.38],[-77.86,0.81],[-77.67,0.83],[-77.42,0.39],[-76.58,0.26],[-76.29,0.42],[-75.8,0.09],[-75.37,-0.15]]]},"Egypt":{"type":"Polygon","coordinates":[[[36.87,22],[32.9,22],[29.02,22],[25,22],[25,25.68],[25,29.24],[24.7,30.04],[24.96,30.66],[24.8,31.09],[25.17,31.57],[26.49,31.59],[27.46,31.32],[28.45,31.03],[28.91,30.87],[29.68,31.19],[30.09,31.47],[30.98,31.56],[31.69,31.43],[31.96,30.93],[32.19,31.26],[32.99,31.02],[33.77,30.97],[34.27,31.22],[34.82,29.76],[34.92,29.5],[34.64,29.1],[34.43,28.34],[34.16,27.82],[33.92,27.65],[33.59,27.97],[33.14,28.42],[32.42,29.85],[32.32,29.76],[32.73,28.7],[33.35,27.7],[34.1,26.14],[34.47,25.6],[34.8,25.03],[35.69,23.93],[35.49,23.75],[35.53,23.1],[36.69,22.21],[36.87,22]]]},"El Salvador":{"type":"Polygon","coordinates":[[[-89.35,14.42],[-89.06,14.34],[-88.84,14.14],[-88.54,13.98],[-88.51,13.85],[-88.07,13.96],[-87.86,13.89],[-87.72,13.78],[-87.79,13.38],[-87.9,13.15],[-88.48,13.16],[-88.84,13.26],[-89.26,13.46],[-89.81,13.52],[-90.1,13.74],[-90.06,13.88],[-89.72,14.13],[-89.53,14.25],[-89.59,14.36],[-89.35,14.42]]]},"Eq. Guinea":{"type":"Polygon","coordinates":[[[9.65,2.28],[11.28,2.26],[11.28,1.06],[9.83,1.07],[9.49,1.01],[9.3,1.16],[9.65,2.28]]]},"Ethiopia":{"type":"Polygon","coordinates":[[[47.79,8],[44.96,5],[43.66,4.96],[42.77,4.25],[42.13,4.23],[41.86,3.92],[41.17,3.92],[40.77,4.26],[39.85,3.84],[39.56,3.42],[38.89,3.5],[38.67,3.62],[38.44,3.59],[38.12,3.6],[36.86,4.45],[36.16,4.45],[35.82,4.78],[35.82,5.34],[35.3,5.51],[34.71,6.59],[34.25,6.83],[34.08,7.23],[33.57,7.71],[32.95,7.78],[33.29,8.36],[33.82,8.38],[33.98,8.69],[33.96,9.58],[34.26,10.63],[34.73,10.91],[34.83,11.32],[35.26,12.08],[35.87,12.58],[36.27,13.56],[36.43,14.42],[37.59,14.21],[37.91,14.96],[38.51,14.51],[39.1,14.74],[39.34,14.53],[40.03,14.52],[40.9,14.12],[41.15,13.77],[41.6,13.45],[42.01,12.87],[42.35,12.54],[42,12.1],[41.66,11.63],[41.74,11.36],[41.76,11.05],[42.31,11.03],[42.55,11.11],[42.78,10.93],[42.56,10.57],[42.93,10.02],[43.3,9.54],[43.68,9.18],[46.95,8],[47.79,8]]]},"Fiji":{"type":"MultiPolygon","coordinates":[[[[178.12,-17.51],[178.37,-17.34],[178.72,-17.63],[178.55,-18.15],[177.93,-18.29],[177.38,-18.16],[177.29,-17.72],[177.67,-17.38],[178.12,-17.51]]],[[[-180,-16.07],[-179.79,-16.02],[-179.92,-16.5],[-180,-16.56],[-180.64,-16.8],[-181.27,-17.01],[-181.4,-16.64],[-180.9,-16.43],[-180.59,-16.38],[-180,-16.07],[-180,-16.07]]]]},"Gambia":{"type":"Polygon","coordinates":[[[-16.71,13.6],[-15.63,13.62],[-15.4,13.86],[-15.08,13.88],[-14.69,13.63],[-14.38,13.63],[-14.05,13.79],[-13.84,13.51],[-14.28,13.28],[-14.71,13.3],[-15.14,13.51],[-15.51,13.28],[-15.69,13.27],[-15.93,13.13],[-16.84,13.15],[-16.71,13.6]]]},"Greece":{"type":"MultiPolygon","coordinates":[[[[26.29,35.3],[26.16,35],[24.72,34.92],[24.73,35.09],[23.51,35.28],[23.7,35.71],[24.25,35.37],[25.03,35.43],[25.77,35.35],[25.75,35.18],[26.29,35.3]]],[[[22.95,41.34],[23.69,41.31],[24.49,41.58],[25.2,41.23],[26.11,41.33],[26.12,41.83],[26.6,41.56],[26.29,40.94],[26.06,40.82],[25.45,40.85],[24.92,40.95],[23.72,40.69],[24.41,40.12],[23.9,39.96],[23.34,39.96],[22.82,40.48],[22.63,40.26],[22.85,39.66],[23.35,39.19],[22.97,38.97],[23.53,38.51],[24.02,38.22],[24.04,37.65],[23.11,37.92],[23.41,37.41],[22.78,37.3],[23.15,36.42],[22.49,36.41],[21.67,36.84],[21.3,37.64],[21.12,38.31],[20.73,38.77],[20.22,39.34],[20.15,39.63],[20.62,40.11],[20.67,40.44],[21,40.58],[21.02,40.84],[21.67,40.93],[22.06,41.15],[22.6,41.13],[22.76,41.3],[22.95,41.34]]]]},"Guatemala":{"type":"Polygon","coordinates":[[[-92.23,14.54],[-92.2,14.83],[-92.09,15.06],[-92.23,15.25],[-91.75,16.07],[-90.46,16.07],[-90.44,16.41],[-90.6,16.47],[-90.71,16.69],[-91.08,16.92],[-91.45,17.25],[-91,17.25],[-91,17.82],[-90.07,17.82],[-89.14,17.81],[-89.15,17.02],[-89.23,15.89],[-88.93,15.89],[-88.61,15.71],[-88.52,15.85],[-88.22,15.73],[-88.68,15.35],[-89.15,15.07],[-89.23,14.87],[-89.15,14.68],[-89.35,14.42],[-89.59,14.36],[-89.53,14.25],[-89.72,14.13],[-90.06,13.88],[-90.1,13.74],[-90.61,13.91],[-91.23,13.93],[-91.69,14.13],[-92.23,14.54]]]},"Guinea":{"type":"Polygon","coordinates":[[[-13.7,12.59],[-13.22,12.58],[-12.5,12.33],[-12.28,12.35],[-12.2,12.47],[-11.66,12.39],[-11.51,12.44],[-11.46,12.08],[-11.3,12.08],[-11.04,12.21],[-10.87,12.18],[-10.59,11.92],[-10.16,11.84],[-9.89,12.06],[-9.57,12.19],[-9.33,12.33],[-9.13,12.31],[-8.9,12.09],[-8.79,11.81],[-8.38,11.39],[-8.58,11.14],[-8.62,10.81],[-8.41,10.91],[-8.28,10.79],[-8.34,10.49],[-8.03,10.21],[-8.23,10.13],[-8.31,9.79],[-8.08,9.38],[-7.83,8.58],[-8.2,8.45],[-8.3,8.32],[-8.22,8.12],[-8.28,7.69],[-8.44,7.69],[-8.72,7.71],[-8.93,7.31],[-9.21,7.31],[-9.41,7.53],[-9.34,7.93],[-9.75,8.54],[-10.02,8.43],[-10.23,8.41],[-10.51,8.35],[-10.5,8.72],[-10.65,8.98],[-10.62,9.27],[-10.84,9.69],[-11.12,10.05],[-11.92,10.05],[-12.15,9.86],[-12.43,9.84],[-12.6,9.62],[-12.71,9.34],[-13.25,8.9],[-13.69,9.49],[-14.07,9.89],[-14.33,10.02],[-14.58,10.22],[-14.69,10.66],[-14.84,10.88],[-15.13,11.04],[-14.69,11.53],[-14.38,11.51],[-14.12,11.68],[-13.9,11.68],[-13.74,11.81],[-13.83,12.14],[-13.72,12.25],[-13.7,12.59]]]},"Haiti":{"type":"Polygon","coordinates":[[[-71.71,19.71],[-71.62,19.17],[-71.7,18.78],[-71.94,18.62],[-71.69,18.32],[-71.71,18.04],[-72.37,18.21],[-72.84,18.14],[-73.45,18.22],[-73.92,18.03],[-74.46,18.34],[-74.37,18.66],[-73.45,18.53],[-72.69,18.45],[-72.33,18.67],[-72.79,19.1],[-72.78,19.48],[-73.41,19.64],[-73.19,19.92],[-72.58,19.87],[-71.71,19.71]]]},"Honduras":{"type":"Polygon","coordinates":[[[-83.15,15],[-83.49,15.02],[-83.63,14.88],[-83.98,14.75],[-84.23,14.75],[-84.45,14.62],[-84.65,14.67],[-84.82,14.82],[-84.92,14.79],[-85.05,14.55],[-85.15,14.56],[-85.16,14.36],[-85.51,14.08],[-85.7,13.96],[-85.8,13.84],[-86.1,14.04],[-86.31,13.77],[-86.52,13.78],[-86.76,13.75],[-86.73,13.26],[-86.88,13.26],[-87.01,13.03],[-87.32,12.98],[-87.49,13.3],[-87.79,13.38],[-87.72,13.78],[-87.86,13.89],[-88.07,13.96],[-88.51,13.85],[-88.54,13.98],[-88.84,14.14],[-89.06,14.34],[-89.35,14.42],[-89.15,14.68],[-89.23,14.87],[-89.15,15.07],[-88.68,15.35],[-88.22,15.73],[-88.12,15.69],[-87.9,15.86],[-87.62,15.88],[-87.52,15.8],[-87.37,15.85],[-86.9,15.76],[-86.44,15.78],[-86.12,15.89],[-86,16.01],[-85.68,15.95],[-85.45,15.89],[-85.18,15.91],[-84.98,16],[-84.53,15.86],[-84.37,15.83],[-84.06,15.65],[-83.77,15.42],[-83.41,15.27],[-83.15,15]]]},"Indonesia":{"type":"MultiPolygon","coordinates":[[[[141,-2.6],[141.02,-5.86],[141.03,-9.12],[140.14,-8.3],[139.13,-8.1],[138.88,-8.38],[137.61,-8.41],[138.04,-7.6],[138.67,-7.32],[138.41,-6.23],[137.93,-5.39],[135.99,-4.55],[135.17,-4.46],[133.66,-3.54],[133.37,-4.02],[132.98,-4.11],[132.76,-3.75],[132.75,-3.31],[131.99,-2.82],[133.07,-2.46],[133.78,-2.48],[133.7,-2.21],[132.23,-2.21],[131.84,-1.62],[130.94,-1.43],[130.52,-0.94],[131.87,-0.7],[132.38,-0.37],[133.98,-0.78],[134.14,-1.15],[134.42,-2.77],[135.46,-3.37],[136.29,-2.31],[137.44,-1.7],[138.33,-1.7],[139.19,-2.05],[139.93,-2.41],[141,-2.6]]],[[[124.97,-8.89],[125.07,-9.09],[125.09,-9.39],[124.44,-10.14],[123.58,-10.36],[123.46,-10.24],[123.55,-9.9],[123.98,-9.29],[124.97,-8.89]]],[[[134.21,-6.89],[134.11,-6.14],[134.29,-5.78],[134.5,-5.44],[134.73,-5.74],[134.73,-6.21],[134.21,-6.89]]],[[[117.88,4.14],[117.31,3.24],[118.05,2.29],[117.87,1.83],[119,0.9],[117.81,0.78],[117.48,0.1],[117.52,-0.8],[116.56,-1.49],[116.53,-2.48],[116.15,-4.01],[116,-3.66],[114.86,-4.11],[114.47,-3.5],[113.76,-3.44],[113.26,-3.12],[112.07,-3.48],[111.7,-3],[111.05,-3.05],[110.22,-2.93],[110.07,-1.59],[109.57,-1.31],[109.09,-0.46],[108.95,0.42],[109.07,1.34],[109.66,2.01],[109.83,1.34],[110.52,0.77],[111.16,0.98],[111.8,0.9],[112.38,1.41],[112.86,1.5],[113.81,1.22],[114.62,1.43],[115.13,2.82],[115.52,3.17],[115.87,4.31],[117.01,4.31],[117.88,4.14]]],[[[129.37,-2.8],[130.47,-3.09],[130.83,-3.86],[129.99,-3.45],[129.16,-3.36],[128.59,-3.43],[127.9,-3.39],[128.13,-2.84],[129.37,-2.8]]],[[[126.87,-3.79],[126.18,-3.61],[125.99,-3.18],[127,-3.13],[127.25,-3.46],[126.87,-3.79]]],[[[127.93,2.17],[128,1.63],[128.6,1.54],[128.69,1.13],[128.63,0.26],[128.12,0.36],[127.97,-0.25],[128.38,-0.78],[128.1,-0.9],[127.7,-0.27],[127.4,1.01],[127.6,1.81],[127.93,2.17]]],[[[122.93,0.88],[124.08,0.92],[125.07,1.64],[125.24,1.42],[124.44,0.43],[123.68,0.24],[122.72,0.43],[121.06,0.38],[120.18,0.24],[120.04,-0.52],[120.93,-1.41],[121.47,-0.96],[123.34,-0.62],[123.26,-1.08],[122.82,-0.93],[122.39,-1.52],[121.51,-1.91],[122.45,-3.19],[122.27,-3.53],[123.17,-4.68],[123.16,-5.34],[122.63,-5.63],[122.24,-5.28],[122.72,-4.46],[121.74,-4.85],[121.49,-4.57],[121.62,-4.19],[120.9,-3.6],[120.97,-2.63],[120.3,-2.93],[120.39,-4.1],[120.43,-5.53],[119.8,-5.67],[119.37,-5.38],[119.65,-4.46],[119.5,-3.49],[119.08,-3.49],[118.77,-2.8],[119.18,-2.15],[119.32,-1.35],[119.83,0.15],[120.03,0.57],[120.89,1.31],[121.67,1.01],[122.93,0.88]]],[[[120.29,-10.26],[118.97,-9.56],[119.9,-9.36],[120.43,-9.67],[120.78,-9.97],[120.71,-10.24],[120.29,-10.26]]],[[[121.34,-8.54],[122.01,-8.46],[122.9,-8.09],[122.76,-8.65],[121.25,-8.93],[119.92,-8.81],[119.92,-8.45],[120.71,-8.24],[121.34,-8.54]]],[[[118.26,-8.36],[118.88,-8.28],[119.13,-8.71],[117.97,-8.91],[117.28,-9.04],[116.74,-9.03],[117.08,-8.46],[117.63,-8.45],[117.9,-8.09],[118.26,-8.36]]],[[[108.49,-6.42],[108.62,-6.78],[110.54,-6.88],[110.76,-6.46],[112.61,-6.95],[112.98,-7.59],[114.48,-7.78],[115.71,-8.37],[114.57,-8.75],[113.46,-8.35],[112.56,-8.38],[111.52,-8.3],[110.59,-8.12],[109.43,-7.74],[108.69,-7.64],[108.28,-7.77],[106.45,-7.36],[106.28,-6.93],[105.36,-6.85],[106.05,-5.9],[107.26,-5.96],[108.07,-6.35],[108.49,-6.42]]],[[[104.37,-1.08],[104.54,-1.78],[104.89,-2.34],[105.62,-2.43],[106.11,-3.06],[105.86,-4.31],[105.82,-5.85],[104.71,-5.87],[103.87,-5.04],[102.58,-4.22],[102.16,-3.61],[101.4,-2.8],[100.9,-2.05],[100.14,-0.65],[99.26,0.18],[98.97,1.04],[98.6,1.82],[97.7,2.45],[97.18,3.31],[96.43,3.87],[95.38,4.97],[95.29,5.48],[95.94,5.44],[97.48,5.25],[98.37,4.27],[99.14,3.59],[99.69,3.17],[100.64,2.1],[101.66,2.08],[102.5,1.4],[103.08,0.56],[103.84,0.1],[103.44,-0.71],[104.01,-1.06],[104.37,-1.08]]]]},"Iran":{"type":"Polygon","coordinates":[[[48.57,29.93],[48.02,30.45],[48,30.98],[47.68,30.98],[47.85,31.71],[47.34,32.47],[46.11,33.02],[45.42,33.97],[45.65,34.75],[46.15,35.09],[46.08,35.68],[45.42,35.98],[44.77,37.17],[44.22,37.97],[44.42,38.28],[44.11,39.43],[44.79,39.71],[44.95,39.34],[45.46,38.87],[46.14,38.74],[46.51,38.77],[47.68,39.51],[48.06,39.58],[48.35,39.29],[48.01,38.79],[48.63,38.27],[48.88,38.32],[49.2,37.58],[50.15,37.37],[50.84,36.87],[52.26,36.7],[53.83,36.96],[53.92,37.2],[54.8,37.39],[55.51,37.96],[56.18,37.94],[56.62,38.12],[57.33,38.03],[58.44,37.52],[59.23,37.41],[60.38,36.53],[61.12,36.49],[61.21,35.65],[60.8,34.4],[60.53,33.68],[60.96,33.53],[60.54,32.98],[60.86,32.18],[60.94,31.55],[61.7,31.38],[61.78,30.74],[60.87,29.83],[61.37,29.3],[61.77,28.7],[62.73,28.26],[62.75,27.38],[63.23,27.22],[63.32,26.76],[61.88,26.24],[61.5,25.08],[59.61,25.38],[58.52,25.61],[57.4,25.74],[56.97,26.97],[56.49,27.14],[55.72,26.96],[54.72,26.48],[53.49,26.81],[52.48,27.58],[51.52,27.87],[50.85,28.81],[50.11,30.15],[49.58,29.99],[48.94,30.32],[48.57,29.93]]]},"Iraq":{"type":"Polygon","coordinates":[[[39.2,32.16],[38.79,33.38],[41.01,34.42],[41.38,35.63],[41.29,36.36],[41.84,36.61],[42.35,37.23],[42.78,37.39],[43.94,37.26],[44.29,37],[44.77,37.17],[45.42,35.98],[46.08,35.68],[46.15,35.09],[45.65,34.75],[45.42,33.97],[46.11,33.02],[47.34,32.47],[47.85,31.71],[47.68,30.98],[48,30.98],[48.02,30.45],[48.57,29.93],[47.98,29.98],[47.3,30.06],[46.57,29.1],[44.71,29.18],[41.89,31.19],[40.4,31.89],[39.2,32.16]]]},"Israel":{"type":"Polygon","coordinates":[[[35.72,32.71],[35.54,32.39],[35.18,32.53],[34.98,31.87],[35.22,31.75],[34.97,31.62],[34.93,31.35],[35.4,31.49],[35.42,31.1],[34.92,29.5],[34.82,29.76],[34.27,31.22],[34.55,31.55],[34.49,31.61],[34.75,32.07],[34.95,32.83],[35.1,33.08],[35.13,33.09],[35.46,33.09],[35.55,33.26],[35.82,33.28],[35.84,32.87],[35.7,32.72],[35.72,32.71]]]},"Italy":{"type":"MultiPolygon","coordinates":[[[[10.44,46.89],[11.05,46.75],[11.17,46.94],[12.15,47.11],[12.38,46.77],[13.81,46.51],[13.7,46.02],[13.94,45.59],[13.14,45.74],[12.33,45.38],[12.38,44.89],[12.26,44.6],[12.59,44.09],[13.53,43.59],[14.03,42.76],[15.14,41.96],[15.92,41.96],[16.17,41.74],[15.89,41.54],[16.79,41.18],[17.52,40.88],[18.38,40.36],[18.48,40.17],[18.29,39.81],[17.74,40.28],[16.87,40.44],[16.45,39.8],[17.17,39.43],[17.05,38.9],[16.63,38.84],[16.1,37.99],[15.68,37.91],[15.69,38.22],[15.89,38.75],[16.11,38.96],[15.72,39.54],[15.41,40.05],[15,40.17],[14.7,40.61],[14.06,40.79],[13.63,41.19],[12.89,41.25],[12.11,41.71],[11.19,42.36],[10.51,42.93],[10.2,43.92],[9.7,44.04],[8.89,44.37],[8.43,44.23],[7.85,43.77],[7.44,43.69],[7.55,44.13],[7.01,44.25],[6.75,45.03],[7.1,45.33],[6.8,45.71],[6.84,45.99],[7.27,45.78],[7.76,45.82],[8.32,46.16],[8.49,46],[8.97,46.04],[9.18,46.44],[9.92,46.31],[10.36,46.48],[10.44,46.89]]],[[[14.76,38.14],[15.52,38.23],[15.16,37.44],[15.31,37.13],[15.1,36.62],[14.33,37],[13.83,37.1],[12.43,37.61],[12.57,38.13],[13.74,38.04],[14.76,38.14]]],[[[8.71,40.9],[9.21,41.21],[9.81,40.5],[9.67,39.18],[9.21,39.24],[8.81,38.91],[8.43,39.17],[8.39,40.38],[8.16,40.95],[8.71,40.9]]]]},"Japan":{"type":"MultiPolygon","coordinates":[[[[141.88,39.18],[140.96,38.17],[140.98,37.14],[140.6,36.34],[140.77,35.84],[140.25,35.14],[138.97,34.67],[137.22,34.61],[135.79,33.46],[135.12,33.85],[135.08,34.6],[133.34,34.38],[132.16,33.9],[130.99,33.89],[132,33.15],[131.33,31.45],[130.69,31.03],[130.2,31.42],[130.45,32.32],[129.82,32.61],[129.41,33.3],[130.36,33.6],[130.88,34.23],[131.89,34.75],[132.62,35.43],[134.61,35.73],[135.68,35.53],[136.72,37.3],[137.39,36.83],[138.86,37.83],[139.43,38.22],[140.05,39.44],[139.88,40.56],[140.31,41.2],[141.37,41.38],[141.92,39.99],[141.88,39.18]]],[[[144.61,43.96],[145.32,44.38],[145.54,43.26],[144.06,42.99],[143.18,41.99],[141.61,42.68],[141.07,41.59],[139.96,41.57],[139.82,42.56],[140.31,43.33],[141.38,43.39],[141.67,44.77],[141.97,45.55],[143.14,44.51],[143.91,44.17],[144.61,43.96]]],[[[132.37,33.46],[132.93,34.06],[133.49,33.94],[133.91,34.36],[134.64,34.15],[134.77,33.81],[134.2,33.2],[133.79,33.52],[133.28,33.29],[133.02,32.7],[132.36,32.99],[132.37,33.46]]]]},"Kosovo":{"type":"Polygon","coordinates":[[[20.59,41.86],[20.52,42.22],[20.28,42.32],[20.07,42.59],[20.26,42.81],[20.5,42.88],[20.63,43.22],[20.81,43.27],[20.96,43.13],[21.14,43.07],[21.27,42.91],[21.44,42.86],[21.63,42.68],[21.77,42.68],[21.66,42.44],[21.54,42.32],[21.58,42.25],[21.35,42.21],[20.76,42.05],[20.72,41.85],[20.59,41.86]]]},"Kyrgyzstan":{"type":"Polygon","coordinates":[[[70.96,42.27],[71.19,42.7],[71.84,42.85],[73.49,42.5],[73.64,43.09],[74.21,43.3],[75.64,42.88],[76,42.99],[77.66,42.96],[79.14,42.86],[79.65,42.5],[80.26,42.35],[80.12,42.12],[78.54,41.58],[78.19,41.19],[76.91,41.07],[76.53,40.43],[75.47,40.56],[74.78,40.37],[73.82,39.89],[73.96,39.66],[73.68,39.43],[71.78,39.28],[70.55,39.6],[69.46,39.53],[69.56,40.1],[70.65,39.94],[71.01,40.24],[71.78,40.15],[73.05,40.87],[71.87,41.39],[71.16,41.14],[70.42,41.52],[71.26,42.17],[70.96,42.27]]]},"Laos":{"type":"Polygon","coordinates":[[[107.38,14.2],[106.5,14.57],[106.04,13.88],[105.22,14.27],[105.54,14.72],[105.59,15.57],[104.78,16.44],[104.72,17.43],[103.96,18.24],[103.2,18.31],[103,17.96],[102.41,17.93],[102.11,18.11],[101.06,17.51],[101.04,18.41],[101.28,19.46],[100.6,19.51],[100.55,20.11],[100.12,20.42],[100.33,20.79],[101.18,21.44],[101.27,21.2],[101.8,21.17],[101.65,22.32],[102.17,22.46],[102.75,21.68],[103.2,20.77],[104.44,20.76],[104.82,19.89],[104.18,19.62],[103.9,19.27],[105.09,18.67],[105.93,17.48],[106.56,16.6],[107.31,15.91],[107.56,15.2],[107.38,14.2]]]},"Lebanon":{"type":"Polygon","coordinates":[[[35.82,33.28],[35.55,33.26],[35.46,33.09],[35.13,33.09],[35.48,33.91],[35.98,34.61],[36,34.65],[36.45,34.59],[36.61,34.2],[36.07,33.82],[35.82,33.28]]]},"Liberia":{"type":"Polygon","coordinates":[[[-8.44,7.69],[-8.49,7.4],[-8.39,6.91],[-8.6,6.47],[-8.31,6.19],[-7.99,6.13],[-7.57,5.71],[-7.54,5.31],[-7.63,5.19],[-7.71,4.36],[-7.98,4.36],[-9.01,4.83],[-9.91,5.59],[-10.77,6.14],[-11.44,6.79],[-11.2,7.11],[-11.15,7.4],[-10.69,7.94],[-10.23,8.41],[-10.02,8.43],[-9.75,8.54],[-9.34,7.93],[-9.41,7.53],[-9.21,7.31],[-8.93,7.31],[-8.72,7.71],[-8.44,7.69]]]},"Libya":{"type":"Polygon","coordinates":[[[25,22],[25,20],[23.85,20],[23.84,19.58],[19.85,21.49],[15.86,23.41],[14.85,22.86],[14.14,22.49],[13.58,23.04],[12,23.47],[11.56,24.1],[10.77,24.56],[10.31,24.38],[9.95,24.94],[9.91,25.37],[9.32,26.09],[9.71,26.51],[9.63,27.14],[9.76,27.69],[9.68,28.14],[9.86,28.96],[9.8,29.42],[9.48,30.31],[9.97,30.54],[10.06,30.96],[9.95,31.38],[10.64,31.76],[10.95,32.08],[11.43,32.37],[11.49,33.14],[12.66,32.79],[13.08,32.88],[13.92,32.71],[15.24,32.27],[15.71,31.38],[16.61,31.18],[18.02,30.76],[19.09,30.27],[19.58,30.53],[20.05,30.99],[19.82,31.75],[20.13,32.24],[20.85,32.71],[21.54,32.84],[22.89,32.64],[23.24,32.19],[23.61,32.19],[23.93,32.02],[24.92,31.9],[25.17,31.57],[24.8,31.09],[24.96,30.66],[24.7,30.04],[25,29.24],[25,25.68],[25,22]]]},"Macedonia":{"type":"Polygon","coordinates":[[[22.38,42.32],[22.88,42],[22.95,41.34],[22.76,41.3],[22.6,41.13],[22.06,41.15],[21.67,40.93],[21.02,40.84],[20.6,41.09],[20.46,41.52],[20.59,41.86],[20.72,41.85],[20.76,42.05],[21.35,42.21],[21.58,42.25],[21.92,42.3],[22.38,42.32]]]},"Madagascar":{"type":"Polygon","coordinates":[[[49.54,-12.47],[49.81,-12.9],[50.06,-13.56],[50.22,-14.76],[50.48,-15.23],[50.38,-15.71],[50.2,-16],[49.86,-15.41],[49.67,-15.71],[49.86,-16.45],[49.78,-16.87],[49.5,-17.11],[49.43,-17.95],[49.04,-19.12],[48.55,-20.5],[47.93,-22.39],[47.55,-23.78],[47.1,-24.94],[46.28,-25.18],[45.41,-25.6],[44.83,-25.35],[44.04,-24.99],[43.76,-24.46],[43.7,-23.57],[43.35,-22.78],[43.25,-22.06],[43.43,-21.34],[43.89,-21.16],[43.9,-20.83],[44.38,-20.07],[44.47,-19.44],[44.23,-18.96],[44.04,-18.33],[43.96,-17.41],[44.31,-16.85],[44.45,-16.22],[44.94,-16.18],[45.5,-15.97],[45.87,-15.79],[46.31,-15.78],[46.88,-15.21],[47.71,-14.59],[48,-14.09],[47.87,-13.66],[48.29,-13.78],[48.84,-13.09],[48.87,-12.49],[49.2,-12.04],[49.54,-12.47]]]},"Malawi":{"type":"Polygon","coordinates":[[[32.76,-9.23],[33.74,-9.42],[33.94,-9.69],[34.28,-10.16],[34.56,-11.52],[34.28,-12.28],[34.56,-13.58],[34.91,-13.57],[35.27,-13.89],[35.69,-14.61],[35.77,-15.9],[35.34,-16.11],[35.03,-16.8],[34.38,-16.18],[34.31,-15.48],[34.52,-15.01],[34.46,-14.61],[34.07,-14.36],[33.79,-14.45],[33.22,-13.97],[32.69,-13.71],[32.99,-12.78],[33.31,-12.44],[33.11,-11.61],[33.32,-10.8],[33.49,-10.53],[33.23,-9.68],[32.76,-9.23]]]},"Malaysia":{"type":"MultiPolygon","coordinates":[[[[100.09,6.46],[100.26,6.64],[101.08,6.21],[101.16,5.69],[101.81,5.81],[102.14,6.22],[102.37,6.13],[102.96,5.53],[103.38,4.85],[103.44,4.18],[103.33,3.73],[103.43,3.38],[103.5,2.79],[103.86,2.52],[104.25,1.63],[104.23,1.29],[103.52,1.23],[102.57,1.97],[101.39,2.76],[101.27,3.27],[100.69,3.94],[100.56,4.77],[100.2,5.31],[100.31,6.04],[100.09,6.46]]],[[[117.88,4.14],[117.01,4.31],[115.87,4.31],[115.52,3.17],[115.13,2.82],[114.62,1.43],[113.81,1.22],[112.86,1.5],[112.38,1.41],[111.8,0.9],[111.16,0.98],[110.52,0.77],[109.83,1.34],[109.66,2.01],[110.4,1.66],[111.17,1.85],[111.37,2.7],[111.8,2.89],[113,3.1],[113.71,3.89],[114.21,4.53],[114.66,4.01],[114.87,4.35],[115.35,4.32],[115.4,4.95],[115.45,5.45],[116.22,6.14],[116.73,6.92],[117.13,6.93],[117.64,6.42],[117.69,5.99],[118.35,5.71],[119.18,5.41],[119.11,5.02],[118.44,4.97],[118.62,4.48],[117.88,4.14]]]]},"Mauritania":{"type":"Polygon","coordinates":[[[-17.06,21],[-16.85,21.33],[-12.93,21.33],[-13.12,22.77],[-12.88,23.29],[-11.94,23.37],[-11.97,25.93],[-8.69,25.88],[-8.69,27.4],[-4.92,24.97],[-6.45,24.96],[-5.97,20.64],[-5.49,16.33],[-5.32,16.2],[-5.54,15.5],[-9.55,15.49],[-9.7,15.26],[-10.09,15.33],[-10.65,15.13],[-11.35,15.41],[-11.67,15.39],[-11.84,14.8],[-12.17,14.62],[-12.83,15.3],[-13.44,16.04],[-14.1,16.3],[-14.58,16.6],[-15.14,16.59],[-15.62,16.37],[-16.12,16.46],[-16.46,16.14],[-16.55,16.67],[-16.27,17.17],[-16.15,18.11],[-16.26,19.1],[-16.38,19.59],[-16.28,20.09],[-16.54,20.57],[-17.06,21]]]},"Mexico":{"type":"Polygon","coordinates":[[[-117.13,32.53],[-115.99,32.61],[-114.72,32.72],[-114.81,32.52],[-113.31,32.04],[-111.02,31.33],[-109.04,31.34],[-108.24,31.34],[-108.24,31.75],[-106.51,31.75],[-106.14,31.4],[-105.63,31.08],[-105.04,30.64],[-104.71,30.12],[-104.46,29.57],[-103.94,29.27],[-103.11,28.97],[-102.48,29.76],[-101.66,29.78],[-100.96,29.38],[-100.46,28.7],[-100.11,28.11],[-99.52,27.54],[-99.3,26.84],[-99.02,26.37],[-98.24,26.06],[-97.53,25.84],[-97.14,25.87],[-97.53,24.99],[-97.7,24.27],[-97.78,22.93],[-97.87,22.44],[-97.7,21.9],[-97.39,21.41],[-97.19,20.64],[-96.53,19.89],[-96.29,19.32],[-95.9,18.83],[-94.84,18.56],[-94.43,18.14],[-93.55,18.42],[-92.79,18.53],[-92.04,18.71],[-91.41,18.88],[-90.77,19.28],[-90.53,19.87],[-90.45,20.71],[-90.28,21],[-89.6,21.26],[-88.54,21.49],[-87.66,21.46],[-87.05,21.54],[-86.81,21.33],[-86.85,20.85],[-87.38,20.26],[-87.62,19.65],[-87.44,19.47],[-87.59,19.04],[-87.84,18.26],[-88.09,18.52],[-88.3,18.5],[-88.49,18.49],[-88.85,17.88],[-89.03,18],[-89.15,17.96],[-89.14,17.81],[-90.07,17.82],[-91,17.82],[-91,17.25],[-91.45,17.25],[-91.08,16.92],[-90.71,16.69],[-90.6,16.47],[-90.44,16.41],[-90.46,16.07],[-91.75,16.07],[-92.23,15.25],[-92.09,15.06],[-92.2,14.83],[-92.23,14.54],[-93.36,15.62],[-93.88,15.94],[-94.69,16.2],[-95.25,16.13],[-96.05,15.75],[-96.56,15.65],[-97.26,15.92],[-98.01,16.11],[-98.95,16.57],[-99.7,16.71],[-100.83,17.17],[-101.67,17.65],[-101.92,17.92],[-102.48,17.98],[-103.5,18.29],[-103.92,18.75],[-104.99,19.32],[-105.49,19.95],[-105.73,20.43],[-105.4,20.53],[-105.5,20.82],[-105.27,21.08],[-105.27,21.42],[-105.6,21.87],[-105.69,22.27],[-106.03,22.77],[-106.91,23.77],[-107.92,24.55],[-108.4,25.17],[-109.26,25.58],[-109.44,25.83],[-109.29,26.44],[-109.8,26.68],[-110.39,27.16],[-110.64,27.86],[-111.18,27.94],[-111.76,28.47],[-112.23,28.96],[-112.27,29.27],[-112.81,30.02],[-113.17,30.79],[-113.15,31.17],[-113.87,31.57],[-114.21,31.52],[-114.78,31.8],[-114.94,31.39],[-114.77,30.91],[-114.67,30.16],[-114.33,29.75],[-113.59,29.06],[-113.42,28.83],[-113.27,28.76],[-113.14,28.41],[-112.96,28.43],[-112.76,27.78],[-112.46,27.53],[-112.24,27.17],[-111.62,26.66],[-111.29,25.73],[-110.99,25.29],[-110.71,24.83],[-110.66,24.3],[-110.17,24.27],[-109.77,23.81],[-109.41,23.36],[-109.43,23.19],[-109.85,22.82],[-110.03,22.82],[-110.3,23.43],[-110.95,24],[-111.67,24.49],[-112.18,24.74],[-112.15,25.47],[-112.3,26.01],[-112.78,26.32],[-113.46,26.77],[-113.6,26.64],[-113.85,26.9],[-114.46,27.14],[-115.06,27.72],[-114.98,27.8],[-114.57,27.74],[-114.2,28.12],[-114.16,28.57],[-114.93,29.28],[-115.52,29.56],[-115.89,30.18],[-116.26,30.84],[-116.72,31.64],[-117.13,32.53]]]},"Moldova":{"type":"Polygon","coordinates":[[[26.62,48.22],[26.86,48.37],[27.52,48.47],[28.26,48.16],[28.67,48.12],[29.12,47.85],[29.05,47.51],[29.41,47.35],[29.56,46.93],[29.91,46.67],[29.84,46.53],[30.03,46.42],[29.76,46.35],[29.17,46.38],[29.07,46.52],[28.86,46.44],[28.94,46.26],[28.66,45.94],[28.49,45.6],[28.23,45.49],[28.05,45.95],[28.16,46.37],[28.13,46.81],[27.55,47.41],[27.23,47.83],[26.92,48.12],[26.62,48.22]]]},"Mongolia":{"type":"Polygon","coordinates":[[[87.75,49.3],[88.8,49.47],[90.71,50.33],[92.23,50.8],[93.11,50.49],[94.15,50.48],[94.82,50.01],[95.81,49.98],[97.26,49.73],[98.23,50.42],[97.83,51.01],[98.86,52.05],[99.98,51.63],[100.89,51.52],[102.07,51.26],[102.26,50.51],[103.68,50.09],[104.62,50.27],[105.89,50.41],[106.89,50.27],[107.87,49.79],[108.47,49.28],[109.4,49.29],[110.66,49.13],[111.58,49.38],[112.9,49.54],[114.36,50.25],[114.96,50.14],[115.49,49.81],[116.68,49.89],[116.19,49.13],[115.48,48.14],[115.74,47.73],[116.31,47.85],[117.29,47.7],[118.06,48.07],[118.87,47.75],[119.77,47.05],[119.66,46.69],[118.87,46.8],[117.42,46.67],[116.72,46.39],[115.98,45.73],[114.46,45.34],[113.46,44.81],[112.43,45.01],[111.87,45.1],[111.35,44.46],[111.67,44.07],[111.83,43.74],[111.13,43.41],[110.41,42.87],[109.24,42.52],[107.74,42.48],[106.13,42.14],[104.96,41.6],[104.52,41.91],[103.31,41.91],[101.83,42.51],[100.85,42.66],[99.52,42.52],[97.45,42.75],[96.35,42.73],[95.76,43.32],[95.31,44.24],[94.69,44.35],[93.48,44.98],[92.13,45.12],[90.95,45.29],[90.59,45.72],[90.97,46.89],[90.28,47.69],[88.85,48.07],[88.02,48.6],[87.75,49.3]]]},"Mozambique":{"type":"Polygon","coordinates":[[[34.56,-11.52],[35.31,-11.44],[36.51,-11.72],[36.78,-11.6],[37.47,-11.57],[37.83,-11.27],[38.43,-11.29],[39.52,-10.9],[40.32,-10.32],[40.48,-10.77],[40.44,-11.76],[40.56,-12.64],[40.6,-14.2],[40.78,-14.69],[40.48,-15.41],[40.09,-16.1],[39.45,-16.72],[38.54,-17.1],[37.41,-17.59],[36.28,-18.66],[35.9,-18.84],[35.2,-19.55],[34.79,-19.78],[34.7,-20.5],[35.18,-21.25],[35.37,-21.84],[35.39,-22.14],[35.56,-22.09],[35.53,-23.07],[35.37,-23.54],[35.61,-23.71],[35.46,-24.12],[35.04,-24.48],[34.22,-24.82],[33.01,-25.36],[32.57,-25.73],[32.66,-26.15],[32.92,-26.22],[32.83,-26.74],[32.07,-26.73],[31.98,-26.29],[31.84,-25.84],[31.75,-25.48],[31.93,-24.37],[31.67,-23.66],[31.19,-22.25],[32.24,-21.12],[32.51,-20.39],[32.66,-20.31],[32.77,-19.72],[32.61,-19.42],[32.65,-18.67],[32.85,-17.98],[32.85,-16.71],[32.33,-16.39],[31.85,-16.32],[31.64,-16.07],[31.17,-15.86],[30.34,-15.88],[30.27,-15.51],[30.18,-14.8],[33.22,-13.97],[33.79,-14.45],[34.07,-14.36],[34.46,-14.61],[34.52,-15.01],[34.31,-15.48],[34.38,-16.18],[35.03,-16.8],[35.34,-16.11],[35.77,-15.9],[35.69,-14.61],[35.27,-13.89],[34.91,-13.57],[34.56,-13.58],[34.28,-12.28],[34.56,-11.52]]]},"Myanmar":{"type":"Polygon","coordinates":[[[100.12,20.42],[99.54,20.19],[98.96,19.75],[98.25,19.71],[97.8,18.63],[97.38,18.45],[97.86,17.57],[98.5,16.84],[98.9,16.18],[98.54,15.31],[98.19,15.12],[98.43,14.62],[99.1,13.83],[99.21,13.27],[99.2,12.8],[99.59,11.89],[99.04,10.96],[98.55,9.93],[98.46,10.68],[98.77,11.44],[98.43,12.03],[98.51,13.12],[98.1,13.64],[97.78,14.84],[97.6,16.1],[97.16,16.93],[96.5,16.43],[95.37,15.71],[94.81,15.8],[94.19,16.04],[94.54,17.28],[94.33,18.21],[93.54,19.37],[93.66,19.73],[93.08,19.86],[92.37,20.67],[92.3,21.48],[92.65,21.32],[92.67,22.04],[93.17,22.28],[93.06,22.7],[93.29,23.04],[93.33,24.08],[94.11,23.85],[94.55,24.67],[94.6,25.16],[95.15,26],[95.13,26.57],[96.42,27.26],[97.13,27.08],[97.05,27.7],[97.4,27.88],[97.33,28.26],[97.91,28.34],[98.25,27.75],[98.68,27.51],[98.71,26.74],[98.67,25.92],[97.72,25.08],[97.61,23.9],[98.66,24.06],[98.9,23.14],[99.53,22.95],[99.24,22.12],[99.98,21.74],[100.42,21.56],[101.15,21.85],[101.18,21.44],[100.33,20.79],[100.12,20.42]]]},"N. Cyprus":{"type":"Polygon","coordinates":[[[32.73,35.14],[32.8,35.14],[32.95,35.39],[33.67,35.37],[34.58,35.67],[33.9,35.25],[33.98,35.06],[33.87,35.09],[33.68,35.02],[33.53,35.04],[33.47,35],[33.46,35.1],[33.38,35.16],[33.19,35.17],[32.92,35.09],[32.73,35.14]]]},"Namibia":{"type":"Polygon","coordinates":[[[19.9,-24.77],[19.9,-28.46],[19,-28.97],[18.47,-29.05],[17.84,-28.86],[17.39,-28.78],[17.22,-28.36],[16.82,-28.08],[16.35,-28.58],[15.6,-27.82],[15.21,-27.09],[14.99,-26.12],[14.74,-25.39],[14.41,-23.85],[14.38,-22.66],[14.26,-22.11],[13.87,-21.7],[13.35,-20.87],[12.83,-19.67],[12.61,-19.05],[11.8,-18.07],[11.73,-17.3],[12.22,-17.11],[12.81,-16.94],[13.46,-16.97],[14.06,-17.42],[14.21,-17.35],[18.26,-17.31],[18.96,-17.79],[21.38,-17.93],[23.21,-17.52],[24.04,-17.3],[24.68,-17.35],[25.08,-17.58],[25.08,-17.66],[24.52,-17.89],[24.22,-17.89],[23.58,-18.28],[23.2,-17.87],[21.66,-18.22],[20.91,-18.25],[20.88,-21.81],[19.9,-21.85],[19.9,-24.77]]]},"Nepal":{"type":"Polygon","coordinates":[[[88.12,27.88],[88.04,27.45],[88.17,26.81],[88.06,26.41],[87.23,26.4],[86.02,26.63],[85.25,26.73],[84.67,27.24],[83.3,27.36],[82,27.93],[81.06,28.42],[80.09,28.79],[80.48,29.73],[81.11,30.18],[81.52,30.42],[82.33,30.11],[83.34,29.46],[83.9,29.32],[84.24,28.84],[85.01,28.64],[85.82,28.2],[86.95,27.97],[88.12,27.88]]]},"Niger":{"type":"Polygon","coordinates":[[[14.85,22.86],[15.1,21.31],[15.47,21.05],[15.49,20.73],[15.9,20.39],[15.69,19.96],[15.3,17.93],[15.25,16.63],[13.97,15.68],[13.54,14.37],[13.96,14],[13.96,13.35],[14.6,13.33],[14.5,12.86],[14.21,12.8],[14.18,12.48],[14,12.46],[13.32,13.56],[13.08,13.6],[12.3,13.04],[11.53,13.33],[10.99,13.39],[10.7,13.25],[10.11,13.28],[9.52,12.85],[9.02,12.83],[7.8,13.34],[7.33,13.1],[6.82,13.11],[6.45,13.49],[5.44,13.87],[4.37,13.75],[4.11,13.53],[3.97,12.96],[3.68,12.55],[3.61,11.66],[2.85,12.24],[2.49,12.23],[2.15,11.94],[2.18,12.63],[1.02,12.85],[0.99,13.34],[0.43,13.99],[0.3,14.44],[0.38,14.93],[1.02,14.97],[1.38,15.32],[2.75,15.41],[3.64,15.57],[3.72,16.18],[4.27,16.85],[4.27,19.16],[5.68,19.6],[8.57,21.57],[12,23.47],[13.58,23.04],[14.14,22.49],[14.85,22.86]]]},"Nigeria":{"type":"Polygon","coordinates":[[[2.69,6.26],[2.75,7.87],[2.72,8.51],[2.91,9.14],[3.22,9.44],[3.71,10.06],[3.6,10.33],[3.8,10.73],[3.57,11.33],[3.61,11.66],[3.68,12.55],[3.97,12.96],[4.11,13.53],[4.37,13.75],[5.44,13.87],[6.45,13.49],[6.82,13.11],[7.33,13.1],[7.8,13.34],[9.02,12.83],[9.52,12.85],[10.11,13.28],[10.7,13.25],[10.99,13.39],[11.53,13.33],[12.3,13.04],[13.08,13.6],[13.32,13.56],[14,12.46],[14.18,12.48],[14.58,12.09],[14.47,11.9],[14.42,11.57],[13.57,10.8],[13.31,10.16],[13.17,9.64],[12.95,9.42],[12.75,8.72],[12.22,8.31],[12.07,7.8],[11.84,7.4],[11.75,6.98],[11.06,6.64],[10.5,7.06],[10.12,7.04],[9.52,6.45],[9.23,6.44],[8.76,5.48],[8.5,4.77],[7.46,4.41],[7.08,4.46],[6.7,4.24],[5.9,4.26],[5.36,4.89],[5.03,5.61],[4.33,6.27],[3.57,6.26],[2.69,6.26]]]},"Pakistan":{"type":"Polygon","coordinates":[[[77.84,35.49],[76.87,34.65],[75.76,34.51],[74.24,34.75],[73.75,34.32],[74.1,33.44],[74.45,32.77],[75.26,32.27],[74.41,31.69],[74.42,30.98],[73.45,29.98],[72.82,28.96],[71.78,27.91],[70.62,27.99],[69.51,26.94],[70.17,26.49],[70.28,25.72],[70.84,25.21],[71.04,24.36],[68.84,24.36],[68.18,23.69],[67.44,23.95],[67.15,24.66],[66.37,25.42],[64.53,25.24],[62.91,25.22],[61.5,25.08],[61.88,26.24],[63.32,26.76],[63.23,27.22],[62.75,27.38],[62.73,28.26],[61.77,28.7],[61.37,29.3],[60.87,29.83],[62.55,29.32],[63.55,29.47],[64.15,29.34],[64.35,29.56],[65.05,29.47],[66.35,29.89],[66.38,30.74],[66.94,31.3],[67.68,31.3],[67.79,31.58],[68.56,31.71],[68.93,31.62],[69.32,31.9],[69.26,32.5],[69.69,33.11],[70.32,33.36],[69.93,34.02],[70.88,33.99],[71.16,34.35],[71.11,34.73],[71.61,35.15],[71.5,35.65],[71.26,36.07],[71.85,36.51],[72.92,36.72],[74.07,36.84],[74.58,37.02],[75.16,37.13],[75.9,36.67],[76.19,35.9],[77.84,35.49]]]},"Palestine":{"type":"Polygon","coordinates":[[[35.4,31.49],[34.93,31.35],[34.97,31.62],[35.22,31.75],[34.98,31.87],[35.18,32.53],[35.54,32.39],[35.54,31.78],[35.4,31.49]]]},"Panama":{"type":"Polygon","coordinates":[[[-77.35,8.67],[-77.47,8.52],[-77.24,7.94],[-77.43,7.64],[-77.75,7.71],[-77.88,7.22],[-78.22,7.51],[-78.43,8.05],[-78.18,8.32],[-78.44,8.39],[-78.62,8.72],[-79.12,9],[-79.56,8.93],[-79.76,8.59],[-80.16,8.33],[-80.38,8.3],[-80.48,8.09],[-80.01,7.55],[-80.28,7.42],[-80.42,7.27],[-80.89,7.22],[-81.06,7.82],[-81.19,7.65],[-81.52,7.71],[-81.72,8.11],[-82.13,8.18],[-82.39,8.29],[-82.82,8.29],[-82.85,8.07],[-82.96,8.22],[-82.91,8.42],[-82.83,8.63],[-82.87,8.81],[-82.72,8.93],[-82.93,9.07],[-82.93,9.48],[-82.55,9.57],[-82.19,9.21],[-82.21,8.99],[-81.81,8.95],[-81.72,9.03],[-81.44,8.79],[-80.95,8.86],[-80.52,9.11],[-79.92,9.31],[-79.57,9.61],[-79.02,9.55],[-79.06,9.46],[-78.5,9.42],[-78.05,9.25],[-77.73,8.95],[-77.35,8.67]]]},"Philippines":{"type":"MultiPolygon","coordinates":[[[[120.83,12.7],[120.32,13.47],[121.18,13.43],[121.53,13.07],[121.26,12.21],[120.83,12.7]]],[[[122.59,9.98],[122.84,10.26],[122.95,10.88],[123.5,10.94],[123.34,10.27],[124.08,11.23],[123.98,10.28],[123.62,9.95],[123.31,9.32],[123,9.02],[122.38,9.71],[122.59,9.98]]],[[[126.38,8.41],[126.48,7.75],[126.54,7.19],[126.2,6.27],[125.83,7.29],[125.36,6.79],[125.68,6.05],[125.4,5.58],[124.22,6.16],[123.94,6.89],[124.24,7.36],[123.61,7.83],[123.3,7.42],[122.82,7.46],[122.09,6.9],[121.92,7.19],[122.31,8.04],[122.94,8.32],[123.49,8.69],[123.84,8.24],[124.6,8.51],[124.76,8.96],[125.47,8.99],[125.41,9.76],[126.22,9.29],[126.31,8.78],[126.38,8.41]]],[[[118.5,9.32],[117.18,8.37],[117.67,9.07],[118.39,9.68],[118.99,10.38],[119.51,11.37],[119.69,10.55],[119.03,10],[118.5,9.32]]],[[[122.34,18.22],[122.17,17.81],[122.51,17.09],[122.25,16.26],[121.66,15.93],[121.51,15.13],[121.73,14.33],[122.26,14.22],[122.7,14.34],[123.95,13.78],[123.85,13.24],[124.18,13],[124.08,12.54],[123.3,13.03],[122.93,13.55],[122.67,13.19],[122.04,13.78],[121.13,13.64],[120.63,13.86],[120.68,14.27],[120.99,14.53],[120.69,14.76],[120.56,14.4],[120.07,14.97],[119.92,15.41],[119.88,16.36],[120.29,16.03],[120.39,17.6],[120.71,18.51],[121.32,18.5],[121.94,18.22],[122.24,18.48],[122.34,18.22]]],[[[122.04,11.42],[121.88,11.89],[122.48,11.58],[123.12,11.58],[123.1,11.17],[122.64,10.74],[122,10.44],[121.97,10.91],[122.04,11.42]]],[[[125.5,12.16],[125.78,11.05],[125.01,11.31],[125.03,10.98],[125.28,10.36],[124.8,10.13],[124.76,10.84],[124.46,10.89],[124.3,11.49],[124.89,11.42],[124.88,11.79],[124.27,12.56],[125.23,12.54],[125.5,12.16]]]]},"Russia":{"type":"MultiPolygon","coordinates":[[[[93.78,81.03],[95.94,81.25],[97.88,80.75],[100.19,79.78],[99.94,78.88],[97.76,78.76],[94.97,79.04],[93.31,79.43],[92.54,80.14],[91.18,80.34],[93.78,81.03]]],[[[102.84,79.28],[105.37,78.71],[105.08,78.31],[99.44,77.92],[101.26,79.23],[102.09,79.35],[102.84,79.28]]],[[[138.83,76.14],[141.47,76.09],[145.09,75.56],[144.3,74.82],[140.62,74.85],[138.96,74.61],[136.98,75.26],[137.51,75.95],[138.83,76.14]]],[[[148.22,75.35],[150.73,75.08],[149.58,74.69],[147.98,74.78],[146.12,75.17],[146.36,75.5],[148.22,75.35]]],[[[139.86,73.37],[140.81,73.77],[142.06,73.86],[143.48,73.47],[143.6,73.21],[142.09,73.21],[140.04,73.32],[139.86,73.37]]],[[[44.85,80.59],[46.8,80.77],[48.32,80.78],[48.52,80.51],[49.1,80.75],[50.04,80.92],[51.52,80.7],[51.14,80.55],[49.79,80.42],[48.89,80.34],[48.75,80.18],[47.59,80.01],[46.5,80.25],[47.07,80.56],[44.85,80.59]]],[[[22.73,54.33],[20.89,54.31],[19.66,54.43],[19.89,54.87],[21.27,55.19],[22.31,55.02],[22.76,54.86],[22.65,54.58],[22.73,54.33]]],[[[53.51,73.75],[55.9,74.63],[55.63,75.08],[57.87,75.61],[61.17,76.25],[64.5,76.44],[66.21,76.81],[68.16,76.94],[68.85,76.54],[68.18,76.23],[64.64,75.74],[61.58,75.26],[58.48,74.31],[56.99,73.33],[55.42,72.37],[55.62,71.54],[57.53,70.72],[56.94,70.63],[53.68,70.76],[53.41,71.21],[51.6,71.47],[51.46,72.02],[52.48,72.23],[52.44,72.78],[54.43,73.63],[53.51,73.75]]],[[[142.92,53.7],[143.26,52.74],[143.24,51.76],[143.65,50.75],[144.65,48.98],[143.18,49.31],[142.56,47.86],[143.54,46.84],[143.51,46.14],[142.75,46.74],[142.09,45.97],[141.91,46.81],[142.02,47.78],[141.9,48.86],[142.13,49.61],[142.18,50.95],[141.59,51.94],[141.68,53.3],[142.61,53.76],[142.21,54.23],[142.65,54.37],[142.92,53.7]]],[[[130.78,42.22],[130.64,42.4],[130.63,42.9],[131.14,42.93],[131.29,44.11],[131.03,44.97],[131.88,45.32],[133.1,45.14],[133.77,46.12],[134.11,47.21],[134.5,47.58],[135.02,48.48],[133.37,48.18],[132.51,47.79],[130.99,47.79],[130.58,48.73],[129.4,49.44],[127.66,49.76],[127.29,50.74],[126.94,51.35],[126.56,51.78],[125.95,52.79],[125.07,53.16],[123.57,53.46],[122.24,53.43],[121,53.25],[120.18,52.75],[120.73,52.52],[120.74,51.96],[120.18,51.64],[119.28,50.58],[119.29,50.14],[117.88,49.51],[116.68,49.89],[115.49,49.81],[114.96,50.14],[114.36,50.25],[112.9,49.54],[111.58,49.38],[110.66,49.13],[109.4,49.29],[108.47,49.28],[107.87,49.79],[106.89,50.27],[105.89,50.41],[104.62,50.27],[103.68,50.09],[102.26,50.51],[102.07,51.26],[100.89,51.52],[99.98,51.63],[98.86,52.05],[97.83,51.01],[98.23,50.42],[97.26,49.73],[95.81,49.98],[94.82,50.01],[94.15,50.48],[93.11,50.49],[92.23,50.8],[90.71,50.33],[88.8,49.47],[87.75,49.3],[87.36,49.22],[86.83,49.83],[85.54,49.69],[85.11,50.12],[84.42,50.31],[83.94,50.89],[83.38,51.07],[81.95,50.81],[80.57,51.39],[80.03,50.87],[77.8,53.4],[76.52,54.18],[76.89,54.49],[74.39,53.55],[73.42,53.49],[73.51,54.04],[72.23,54.38],[71.18,54.13],[70.86,55.17],[69.07,55.38],[68.17,54.97],[65.67,54.6],[65.18,54.35],[61.44,54.01],[60.98,53.66],[61.7,52.98],[60.74,52.72],[60.93,52.45],[59.97,51.96],[61.59,51.27],[61.34,50.8],[59.93,50.84],[59.64,50.55],[58.36,51.06],[56.78,51.04],[55.72,50.62],[54.53,51.03],[52.33,51.72],[50.77,51.69],[48.7,50.6],[48.58,49.88],[47.55,50.45],[46.75,49.36],[47.04,49.15],[46.47,48.39],[47.31,47.72],[48.06,47.74],[48.7,47.08],[48.59,46.56],[49.1,46.4],[48.65,45.81],[47.68,45.64],[46.68,44.61],[47.59,43.66],[47.49,42.99],[48.58,41.81],[47.99,41.41],[47.81,41.15],[47.37,41.22],[46.69,41.83],[46.41,41.86],[45.78,42.09],[45.47,42.5],[44.54,42.71],[43.93,42.55],[43.76,42.74],[42.4,43.22],[40.92,43.38],[40.08,43.55],[39.95,43.44],[38.68,44.28],[37.54,44.66],[36.68,45.24],[37.4,45.41],[38.23,46.24],[37.67,46.64],[39.15,47.05],[39.12,47.26],[38.22,47.1],[38.26,47.55],[38.77,47.83],[39.74,47.9],[39.9,48.23],[39.67,48.78],[40.08,49.31],[40.07,49.6],[38.59,49.93],[38.01,49.92],[37.39,50.38],[36.62,50.23],[35.36,50.58],[35.38,50.77],[35.02,51.21],[34.22,51.26],[34.14,51.57],[34.39,51.77],[33.75,52.33],[32.72,52.24],[32.41,52.29],[32.16,52.06],[31.79,52.1],[31.54,52.74],[31.3,53.07],[31.5,53.17],[32.3,53.13],[32.69,53.35],[32.41,53.62],[31.73,53.79],[31.79,53.97],[31.38,54.16],[30.76,54.81],[30.97,55.08],[30.88,55.55],[29.9,55.79],[29.37,55.67],[29.23,55.92],[28.18,56.17],[27.86,56.76],[27.77,57.24],[27.29,57.47],[27.72,57.79],[27.42,58.72],[28.13,59.3],[27.98,59.48],[29.12,60.03],[28.07,60.5],[30.21,61.78],[31.14,62.36],[31.52,62.87],[30.04,63.55],[30.44,64.2],[29.54,64.95],[30.22,65.81],[29.05,66.94],[29.98,67.7],[28.45,68.36],[28.59,69.07],[29.4,69.16],[31.1,69.56],[32.13,69.91],[33.77,69.3],[36.51,69.06],[40.29,67.93],[41.06,67.46],[41.13,66.79],[40.02,66.27],[38.38,66],[33.92,66.76],[33.18,66.63],[34.81,65.9],[34.88,65.44],[34.94,64.41],[36.23,64.11],[37.01,63.85],[37.14,64.33],[36.54,64.76],[37.18,65.14],[39.59,64.52],[40.43,64.76],[39.76,65.5],[42.09,66.48],[43.02,66.42],[43.95,66.07],[44.53,66.76],[43.7,67.35],[44.19,67.95],[43.45,68.57],[46.25,68.25],[46.82,67.69],[45.56,67.57],[45.56,67.01],[46.35,66.67],[47.89,66.88],[48.14,67.52],[50.23,68],[53.72,68.86],[54.47,68.81],[53.49,68.2],[54.73,68.1],[55.44,68.44],[57.32,68.47],[58.8,68.88],[59.94,68.28],[61.08,68.94],[60.03,69.52],[60.55,69.85],[63.5,69.55],[64.89,69.23],[68.51,68.09],[69.18,68.62],[68.16,69.14],[68.14,69.36],[66.93,69.45],[67.26,69.93],[66.72,70.71],[66.7,71.03],[68.54,71.93],[69.2,72.84],[69.94,73.04],[72.59,72.78],[72.79,72.22],[71.85,71.41],[72.47,71.09],[72.79,70.39],[72.56,69.02],[73.67,68.41],[73.24,67.74],[71.28,66.32],[72.42,66.17],[72.82,66.53],[73.92,66.79],[74.19,67.28],[75.05,67.76],[74.47,68.33],[74.94,68.99],[73.84,69.07],[73.6,69.63],[74.4,70.63],[73.1,71.45],[74.89,72.12],[74.66,72.83],[75.16,72.86],[75.68,72.3],[75.29,71.34],[76.36,71.15],[75.9,71.87],[77.58,72.27],[79.65,72.32],[81.5,71.75],[80.61,72.58],[80.51,73.65],[82.25,73.85],[84.66,73.81],[86.82,73.94],[86.01,74.46],[87.17,75.12],[88.31,75.14],[90.26,75.64],[92.9,75.77],[93.24,76.05],[95.86,76.14],[96.68,75.92],[98.92,76.45],[100.76,76.43],[101.04,76.86],[101.99,77.29],[104.35,77.7],[106.07,77.37],[104.71,77.13],[106.97,76.97],[107.24,76.48],[108.15,76.72],[111.08,76.71],[113.33,76.22],[114.13,75.85],[113.89,75.33],[112.78,75.03],[110.15,74.48],[109.4,74.18],[110.64,74.04],[112.12,73.79],[113.02,73.98],[113.53,73.34],[113.97,73.59],[115.57,73.75],[118.78,73.59],[119.02,73.12],[123.2,72.97],[123.26,73.74],[125.38,73.56],[126.98,73.57],[128.59,73.04],[129.05,72.4],[128.46,71.98],[129.71,71.19],[131.29,70.79],[132.25,71.84],[133.86,71.39],[135.56,71.66],[137.5,71.35],[138.23,71.63],[139.87,71.49],[139.15,72.42],[140.47,72.85],[149.5,72.2],[150.35,71.61],[152.97,70.84],[157.01,71.03],[159,70.87],[159.83,70.45],[159.71,69.72],[160.94,69.44],[162.28,69.64],[164.05,69.67],[165.94,69.47],[167.84,69.58],[169.58,68.69],[170.82,69.01],[170.01,69.65],[170.45,70.1],[173.64,69.82],[175.72,69.88],[178.6,69.4],[180,68.96],[182.45,68.2],[185.07,67.21],[184.99,66.58],[185.66,66.34],[185.43,67.06],[188.14,66.91],[190.1,65.98],[189.11,65.54],[187.47,65.44],[187.44,64.46],[187.05,64.25],[186.11,64.28],[185.35,64.63],[184.02,64.92],[183.79,65.36],[182.78,65.52],[181.64,65.39],[181.1,65.74],[181.31,66.11],[180.12,65.87],[180.57,65.4],[180,64.98],[179.99,64.97],[178.71,64.53],[177.41,64.61],[178.31,64.08],[178.91,63.25],[179.37,62.98],[179.49,62.57],[179.23,62.3],[177.36,62.52],[174.57,61.77],[173.68,61.65],[172.15,60.95],[170.7,60.34],[170.33,59.88],[168.9,60.57],[166.29,59.79],[165.84,60.16],[164.88,59.73],[163.54,59.87],[163.22,59.21],[162.02,58.24],[162.05,57.84],[163.19,57.62],[163.06,56.16],[162.13,56.12],[161.7,55.29],[162.12,54.85],[160.37,54.34],[160.02,53.2],[158.53,52.96],[158.23,51.94],[156.79,51.01],[156.42,51.7],[155.99,53.16],[155.43,55.38],[155.92,56.77],[156.76,57.36],[156.81,57.83],[158.36,58.06],[160.15,59.31],[161.87,60.34],[163.67,61.14],[164.47,62.55],[163.26,62.47],[162.66,61.64],[160.12,60.54],[159.3,61.77],[156.72,61.43],[154.22,59.76],[155.04,59.15],[152.81,58.88],[151.26,58.78],[151.34,59.5],[149.78,59.66],[148.55,59.16],[145.49,59.34],[142.2,59.04],[138.96,57.09],[135.13,54.73],[136.7,54.6],[137.19,53.98],[138.16,53.75],[138.8,54.25],[139.9,54.19],[141.35,53.09],[141.38,52.24],[140.6,51.24],[140.51,50.05],[140.06,48.45],[138.56,47],[138.22,46.31],[136.86,45.14],[135.51,43.99],[134.87,43.4],[133.54,42.81],[132.91,42.8],[132.28,43.28],[130.94,42.55],[130.78,42.22]]],[[[-180,71.52],[-179.87,71.56],[-179.02,71.56],[-177.58,71.27],[-177.66,71.13],[-178.69,70.89],[-180,70.83],[-181.1,70.78],[-181.27,71.1],[-180,71.52]]],[[[33.44,45.97],[33.7,46.22],[34.41,46],[34.73,45.97],[34.86,45.77],[35.01,45.74],[35.02,45.65],[35.51,45.41],[36.53,45.47],[36.33,45.11],[35.24,44.94],[33.88,44.36],[33.33,44.57],[33.55,45.03],[32.45,45.33],[32.63,45.52],[33.59,45.85],[33.44,45.97]]]]},"S. Sudan":{"type":"Polygon","coordinates":[[[30.83,3.51],[29.95,4.17],[29.72,4.6],[29.16,4.39],[28.7,4.46],[28.43,4.29],[27.98,4.41],[27.37,5.23],[27.21,5.55],[26.47,5.95],[26.21,6.55],[25.8,6.98],[25.12,7.5],[25.12,7.83],[24.57,8.23],[23.89,8.62],[24.19,8.73],[24.54,8.92],[24.8,9.81],[25.07,10.27],[25.79,10.41],[25.96,10.14],[26.48,9.55],[26.75,9.47],[27.11,9.64],[27.83,9.6],[27.97,9.4],[28.97,9.4],[29,9.6],[29.51,9.79],[29.62,10.08],[30,10.29],[30.84,9.71],[31.35,9.81],[31.85,10.53],[32.4,11.08],[32.32,11.68],[32.07,11.97],[32.68,12.02],[32.74,12.25],[33.21,12.18],[33.09,11.44],[33.21,10.72],[33.72,10.33],[33.84,9.98],[33.82,9.48],[33.96,9.46],[33.98,8.69],[33.82,8.38],[33.29,8.36],[32.95,7.78],[33.57,7.71],[34.08,7.23],[34.25,6.83],[34.71,6.59],[35.3,5.51],[34.62,4.85],[34,4.25],[33.39,3.79],[32.69,3.79],[31.88,3.56],[31.25,3.78],[30.83,3.51]]]},"Senegal":{"type":"Polygon","coordinates":[[[-16.71,13.6],[-17.13,14.37],[-17.62,14.73],[-17.18,14.92],[-16.7,15.62],[-16.46,16.14],[-16.12,16.46],[-15.62,16.37],[-15.14,16.59],[-14.58,16.6],[-14.1,16.3],[-13.44,16.04],[-12.83,15.3],[-12.17,14.62],[-12.12,13.99],[-11.93,13.42],[-11.55,13.14],[-11.47,12.75],[-11.51,12.44],[-11.66,12.39],[-12.2,12.47],[-12.28,12.35],[-12.5,12.33],[-13.22,12.58],[-13.7,12.59],[-15.55,12.63],[-15.82,12.52],[-16.15,12.55],[-16.68,12.39],[-16.84,13.15],[-15.93,13.13],[-15.69,13.27],[-15.51,13.28],[-15.14,13.51],[-14.71,13.3],[-14.28,13.28],[-13.84,13.51],[-14.05,13.79],[-14.38,13.63],[-14.69,13.63],[-15.08,13.88],[-15.4,13.86],[-15.63,13.62],[-16.71,13.6]]]},"Serbia":{"type":"Polygon","coordinates":[[[18.83,45.91],[19.6,46.17],[20.22,46.13],[20.76,45.74],[20.87,45.42],[21.48,45.18],[21.56,44.77],[22.15,44.48],[22.46,44.7],[22.71,44.58],[22.47,44.41],[22.66,44.24],[22.41,44.01],[22.5,43.64],[22.98,43.21],[22.61,42.9],[22.44,42.58],[22.55,42.46],[22.38,42.32],[21.92,42.3],[21.58,42.25],[21.54,42.32],[21.66,42.44],[21.77,42.68],[21.63,42.68],[21.44,42.86],[21.27,42.91],[21.14,43.07],[20.96,43.13],[20.81,43.27],[20.63,43.22],[20.5,42.88],[20.26,42.81],[20.34,42.9],[19.96,43.11],[19.63,43.21],[19.49,43.35],[19.22,43.52],[19.45,43.57],[19.6,44.04],[19.12,44.42],[19.37,44.86],[19.01,44.86],[19.39,45.24],[19.07,45.52],[18.83,45.91]]]},"Sierra Leone":{"type":"Polygon","coordinates":[[[-13.25,8.9],[-12.71,9.34],[-12.6,9.62],[-12.43,9.84],[-12.15,9.86],[-11.92,10.05],[-11.12,10.05],[-10.84,9.69],[-10.62,9.27],[-10.65,8.98],[-10.5,8.72],[-10.51,8.35],[-10.23,8.41],[-10.69,7.94],[-11.15,7.4],[-11.2,7.11],[-11.44,6.79],[-11.71,6.86],[-12.43,7.26],[-12.95,7.8],[-13.12,8.16],[-13.25,8.9]]]},"Somalia":{"type":"Polygon","coordinates":[[[41.59,-1.68],[40.99,-0.86],[40.98,2.78],[41.86,3.92],[42.13,4.23],[42.77,4.25],[43.66,4.96],[44.96,5],[47.79,8],[48.49,8.84],[48.94,9.45],[48.94,9.97],[48.94,10.98],[48.94,11.39],[48.95,11.41],[49.27,11.43],[49.73,11.58],[50.26,11.68],[50.73,12.02],[51.11,12.02],[51.13,11.75],[51.04,11.17],[51.05,10.64],[50.83,10.28],[50.55,9.2],[50.07,8.08],[49.45,6.8],[48.6,5.34],[47.74,4.22],[46.56,2.86],[45.56,2.05],[44.07,1.05],[43.14,0.29],[42.04,-0.92],[41.81,-1.45],[41.59,-1.68]]]},"Somaliland":{"type":"Polygon","coordinates":[[[48.95,11.41],[48.94,11.39],[48.94,10.98],[48.94,9.97],[48.94,9.45],[48.49,8.84],[47.79,8],[46.95,8],[43.68,9.18],[43.3,9.54],[42.93,10.02],[42.56,10.57],[42.78,10.93],[43.14,11.46],[43.47,11.28],[43.67,10.86],[44.12,10.45],[44.61,10.44],[45.56,10.7],[46.64,10.82],[47.53,11.13],[48.02,11.19],[48.38,11.38],[48.95,11.41]]]},"Spain":{"type":"Polygon","coordinates":[[[-7.45,37.1],[-7.54,37.43],[-7.17,37.8],[-7.03,38.08],[-7.37,38.37],[-7.1,39.03],[-7.5,39.63],[-7.07,39.71],[-7.03,40.19],[-6.86,40.33],[-6.85,41.11],[-6.39,41.38],[-6.67,41.88],[-7.25,41.92],[-7.42,41.79],[-8.01,41.79],[-8.26,42.28],[-8.67,42.14],[-9.03,41.88],[-8.98,42.59],[-9.39,43.03],[-7.98,43.75],[-6.76,43.57],[-5.41,43.57],[-4.35,43.4],[-3.52,43.46],[-1.9,43.42],[-1.5,43.03],[0.34,42.58],[0.7,42.8],[1.83,42.34],[2.99,42.47],[3.04,41.89],[2.09,41.23],[0.81,41.01],[0.72,40.68],[0.11,40.12],[-0.28,39.31],[0.11,38.74],[-0.47,38.29],[-0.68,37.64],[-1.44,37.44],[-2.15,36.67],[-3.41,36.66],[-4.37,36.68],[-5,36.32],[-5.38,35.95],[-5.87,36.03],[-6.24,36.37],[-6.52,36.94],[-7.45,37.1]]]},"Sri Lanka":{"type":"Polygon","coordinates":[[[81.79,7.52],[81.64,6.48],[81.22,6.2],[80.35,5.97],[79.87,6.76],[79.7,8.2],[80.15,9.82],[80.84,9.27],[81.31,8.56],[81.79,7.52]]]},"Sudan":{"type":"Polygon","coordinates":[[[24.57,8.23],[23.81,8.67],[23.46,8.95],[23.39,9.27],[23.56,9.68],[23.55,10.09],[22.98,10.71],[22.87,11.14],[22.88,11.38],[22.51,11.68],[22.5,12.26],[22.29,12.65],[21.94,12.59],[22.04,12.96],[22.3,13.37],[22.18,13.79],[22.51,14.09],[22.3,14.33],[22.57,14.94],[23.02,15.68],[23.89,15.61],[23.84,19.58],[23.85,20],[25,20],[25,22],[29.02,22],[32.9,22],[36.87,22],[37.19,21.02],[36.97,20.84],[37.11,19.81],[37.48,18.61],[37.86,18.37],[38.41,18],[37.9,17.43],[37.17,17.26],[36.85,16.96],[36.75,16.29],[36.32,14.82],[36.43,14.42],[36.27,13.56],[35.87,12.58],[35.26,12.08],[34.83,11.32],[34.73,10.91],[34.26,10.63],[33.96,9.58],[33.98,8.69],[33.96,9.46],[33.82,9.48],[33.84,9.98],[33.72,10.33],[33.21,10.72],[33.09,11.44],[33.21,12.18],[32.74,12.25],[32.68,12.02],[32.07,11.97],[32.32,11.68],[32.4,11.08],[31.85,10.53],[31.35,9.81],[30.84,9.71],[30,10.29],[29.62,10.08],[29.51,9.79],[29,9.6],[28.97,9.4],[27.97,9.4],[27.83,9.6],[27.11,9.64],[26.75,9.47],[26.48,9.55],[25.96,10.14],[25.79,10.41],[25.07,10.27],[24.8,9.81],[24.54,8.92],[24.19,8.73],[23.89,8.62],[24.57,8.23]]]},"Tajikistan":{"type":"Polygon","coordinates":[[[67.83,37.15],[68.39,38.16],[68.18,38.9],[67.44,39.14],[67.7,39.58],[68.54,39.53],[69.01,40.09],[69.33,40.73],[70.67,40.96],[70.46,40.5],[70.6,40.22],[71.01,40.24],[70.65,39.94],[69.56,40.1],[69.46,39.53],[70.55,39.6],[71.78,39.28],[73.68,39.43],[73.93,38.51],[74.26,38.61],[74.86,38.38],[74.83,37.99],[74.98,37.42],[73.95,37.42],[73.26,37.5],[72.64,37.05],[72.19,36.95],[71.84,36.74],[71.45,37.07],[71.54,37.91],[71.24,37.95],[71.35,38.26],[70.81,38.49],[70.38,38.14],[70.27,37.73],[70.12,37.59],[69.52,37.61],[69.19,37.15],[68.86,37.34],[68.14,37.02],[67.83,37.15]]]},"Tunisia":{"type":"Polygon","coordinates":[[[9.48,30.31],[9.06,32.1],[8.44,32.51],[8.43,32.75],[7.61,33.34],[7.53,34.1],[8.14,34.66],[8.38,35.48],[8.22,36.43],[8.42,36.95],[9.51,37.35],[10.21,37.23],[10.18,36.72],[11.03,37.09],[11.1,36.9],[10.6,36.41],[10.59,35.95],[10.94,35.7],[10.81,34.83],[10.15,34.33],[10.34,33.79],[10.86,33.77],[11.11,33.29],[11.49,33.14],[11.43,32.37],[10.95,32.08],[10.64,31.76],[9.95,31.38],[10.06,30.96],[9.97,30.54],[9.48,30.31]]]},"Uganda":{"type":"Polygon","coordinates":[[[33.9,-0.95],[31.87,-1.03],[30.77,-1.01],[30.42,-1.14],[29.82,-1.44],[29.58,-1.34],[29.59,-0.59],[29.82,-0.21],[29.87,0.6],[30.09,1.06],[30.47,1.58],[30.85,1.85],[31.17,2.2],[30.77,2.34],[30.83,3.51],[31.25,3.78],[31.88,3.56],[32.69,3.79],[33.39,3.79],[34,4.25],[34.48,3.55],[34.59,3.05],[35.04,1.91],[34.67,1.18],[34.18,0.52],[33.89,0.11],[33.9,-0.95]]]},"Ukraine":{"type":"Polygon","coordinates":[[[31.79,52.1],[32.16,52.06],[32.41,52.29],[32.72,52.24],[33.75,52.33],[34.39,51.77],[34.14,51.57],[34.22,51.26],[35.02,51.21],[35.38,50.77],[35.36,50.58],[36.62,50.23],[37.39,50.38],[38.01,49.92],[38.59,49.93],[40.07,49.6],[40.08,49.31],[39.67,48.78],[39.9,48.23],[39.74,47.9],[38.77,47.83],[38.26,47.55],[38.22,47.1],[37.42,47.02],[36.76,46.7],[35.82,46.65],[34.96,46.27],[35.01,45.74],[34.86,45.77],[34.73,45.97],[34.41,46],[33.7,46.22],[33.44,45.97],[33.3,46.08],[31.74,46.33],[31.67,46.71],[30.75,46.58],[30.38,46.03],[29.6,45.29],[29.15,45.46],[28.68,45.3],[28.23,45.49],[28.49,45.6],[28.66,45.94],[28.94,46.26],[28.86,46.44],[29.07,46.52],[29.17,46.38],[29.76,46.35],[30.03,46.42],[29.84,46.53],[29.91,46.67],[29.56,46.93],[29.41,47.35],[29.05,47.51],[29.12,47.85],[28.67,48.12],[28.26,48.16],[27.52,48.47],[26.86,48.37],[26.62,48.22],[26.2,48.22],[25.95,47.99],[25.21,47.89],[24.87,47.74],[24.4,47.98],[23.76,47.99],[23.14,48.1],[22.71,47.88],[22.64,48.15],[22.08,48.42],[22.28,48.83],[22.56,49.09],[22.78,49.03],[22.52,49.48],[23.43,50.31],[23.92,50.43],[24.03,50.71],[23.53,51.58],[24.01,51.62],[24.55,51.89],[25.33,51.91],[26.34,51.83],[27.46,51.59],[28.24,51.57],[28.62,51.43],[28.99,51.6],[29.26,51.37],[30.16,51.42],[30.56,51.32],[30.62,51.82],[30.93,52.04],[31.79,52.1]]]},"Uzbekistan":{"type":"Polygon","coordinates":[[[55.97,41.31],[55.93,45],[58.5,45.59],[58.69,45.5],[60.24,44.78],[61.06,44.41],[62.01,43.5],[63.19,43.65],[64.9,43.73],[66.1,43],[66.02,41.99],[66.51,41.99],[66.71,41.17],[67.98,41.14],[68.26,40.66],[68.63,40.67],[69.07,41.38],[70.39,42.08],[70.96,42.27],[71.26,42.17],[70.42,41.52],[71.16,41.14],[71.87,41.39],[73.05,40.87],[71.78,40.15],[71.01,40.24],[70.6,40.22],[70.46,40.5],[70.67,40.96],[69.33,40.73],[69.01,40.09],[68.54,39.53],[67.7,39.58],[67.44,39.14],[68.18,38.9],[68.39,38.16],[67.83,37.15],[67.07,37.36],[66.52,37.36],[66.54,37.97],[65.22,38.4],[64.17,38.89],[63.52,39.36],[62.38,40.05],[61.88,41.08],[61.55,41.27],[60.46,41.22],[60.08,41.43],[59.97,42.22],[58.63,42.75],[57.79,42.17],[56.93,41.83],[57.09,41.32],[55.97,41.31]]]},"Vanuatu":{"type":"MultiPolygon","coordinates":[[[[167.22,-15.89],[167.85,-16.47],[167.52,-16.6],[167.18,-16.16],[167.22,-15.89]]],[[[166.79,-15.67],[166.65,-15.39],[166.63,-14.63],[167.11,-14.93],[167.27,-15.74],[167,-15.61],[166.79,-15.67]]]]},"Vietnam":{"type":"Polygon","coordinates":[[[104.33,10.49],[105.2,10.89],[106.25,10.96],[105.81,11.57],[107.49,12.34],[107.61,13.54],[107.38,14.2],[107.56,15.2],[107.31,15.91],[106.56,16.6],[105.93,17.48],[105.09,18.67],[103.9,19.27],[104.18,19.62],[104.82,19.89],[104.44,20.76],[103.2,20.77],[102.75,21.68],[102.17,22.46],[102.71,22.71],[103.5,22.7],[104.48,22.82],[105.33,23.35],[105.81,22.98],[106.72,22.79],[106.57,22.22],[107.04,21.81],[108.05,21.55],[106.71,20.7],[105.88,19.75],[105.66,19.06],[106.43,18],[107.36,16.7],[108.27,16.08],[108.88,15.28],[109.33,13.43],[109.2,11.67],[108.37,11.01],[107.22,10.36],[106.4,9.53],[105.16,8.6],[104.8,9.24],[105.08,9.92],[104.33,10.49]]]},"Yemen":{"type":"Polygon","coordinates":[[[52,19],[52.78,17.35],[53.11,16.65],[52.39,16.38],[52.19,15.94],[52.17,15.6],[51.17,15.18],[49.57,14.71],[48.68,14],[48.24,13.95],[47.94,14.01],[47.35,13.59],[46.72,13.4],[45.88,13.35],[45.63,13.29],[45.41,13.03],[45.14,12.95],[44.99,12.7],[44.49,12.72],[44.17,12.59],[43.48,12.64],[43.22,13.22],[43.25,13.77],[43.09,14.06],[42.89,14.8],[42.6,15.21],[42.81,15.26],[42.7,15.72],[42.82,15.91],[42.78,16.35],[43.22,16.67],[43.12,17.09],[43.38,17.58],[43.79,17.32],[44.06,17.41],[45.22,17.43],[45.4,17.33],[46.37,17.23],[46.75,17.28],[47,16.95],[47.47,17.12],[48.18,18.17],[49.12,18.62],[52,19]]]},"Zambia":{"type":"Polygon","coordinates":[[[30.74,-8.34],[31.16,-8.59],[31.56,-8.76],[32.19,-8.93],[32.76,-9.23],[33.23,-9.68],[33.49,-10.53],[33.32,-10.8],[33.11,-11.61],[33.31,-12.44],[32.99,-12.78],[32.69,-13.71],[33.22,-13.97],[30.18,-14.8],[30.27,-15.51],[29.52,-15.65],[28.95,-16.04],[28.83,-16.39],[28.47,-16.47],[27.6,-17.29],[27.05,-17.94],[26.71,-17.96],[26.38,-17.85],[25.26,-17.74],[25.08,-17.66],[25.08,-17.58],[24.68,-17.35],[24.04,-17.3],[23.21,-17.52],[22.56,-16.9],[21.89,-16.08],[21.93,-12.9],[24.02,-12.91],[23.93,-12.57],[24.08,-12.19],[23.9,-11.72],[24.02,-11.24],[23.91,-10.93],[24.26,-10.95],[24.31,-11.26],[24.78,-11.24],[25.42,-11.33],[25.75,-11.78],[26.55,-11.93],[27.16,-11.61],[27.39,-12.13],[28.15,-12.27],[28.52,-12.7],[28.94,-13.25],[29.7,-13.26],[29.62,-12.18],[29.34,-12.36],[28.64,-11.97],[28.37,-11.79],[28.5,-10.79],[28.67,-9.61],[28.45,-9.16],[28.73,-8.53],[29,-8.41],[30.35,-8.24],[30.74,-8.34]]]}};          // ülke sınırları (GeoJSON geometri)
+const SHOW_QTY_TOTALS = false; // true: ülke özet kartında miktar toplamlarını da göster (veri doğrulaması sonrası)
+
+const TR = [39.0, 35.2];
+const S = { year:2010, filter:'all', abort:false, speed:1, running:false, cum:{c:new Set(),o:0} };
+let LANG = 'tr';
+
+/* ═════════ 2. DİL (TR | EN) ═════════ */
+const I18N = {
+ tr:{
+  brandMain:'ULUSLARARASI İNSANİ YARDIMLAR', brandSub:'2010–2026 · Sinematik Sunum Paneli',
+  yearL:'Yıl', opsL:'Operasyon', countriesL:'Ülke', typesL:'Yardım Türü', yearsL:'Yıl',
+  catL:'Kategori:', all:'Tümü', tempoSlow:'Tempo: Yavaş', tempoNormal:'Tempo: Normal', tempoFast:'Tempo: Hızlı',
+  byYear:'YIL BAZLI', byCountry:'ÜLKE BAZLI',
+  playYear:'▶ Seçili Yılı Oynat', playAll:'🎬 2010 → 2026 Tümünü Oynat', recYear:'🎥 Bu Yılı Kaydet',
+  pickCountry:'Ülke seçin…', yearAll:'Yıl: Tüm yıllar', yearPick:'Yıl: ', recCountry:'🎥 Ülkeyi Kaydet', playCountry:'▶ Ülkeyi Oynat', playAllCountries:'🧭 Tüm Ülkeler (A→Z)', network:'🌐 16 Yıllık Tüm Ağı Göster',
+  soundOff:'🔊 Ses: Kapalı', soundOn:'🔊 Ses: Açık', stopBtn:'⏹ Durdur (Esc)', pickFirst:'Önce listeden bir ülke seçin.',
+  spHead:'BÖLGESEL ANALİZ', spSub:'Yardım dağılımı ve operasyon listesi', opsHead:'Operasyonlar', opsCount:'operasyon',
+  noRec:'Bu yıl seçili filtre için kayıt bulunamadı.', chartTitle:'Kategoriye göre operasyon sayısı',
+  cineBrand:'AFAD · ULUSLARARASI İNSANİ YARDIMLAR', opOf:'OPERASYON', cumLabel:'KÜMÜLATİF ETKİ', cumLabelY:"KÜMÜLATİF ETKİ · 2010'DAN BERİ", cumC:'ÜLKE', cumO:'OPERASYON',
+  route:'TÜRKİYE →', yearIntroSub:'yılında yardım ulaştırılan ülkeler', allIntroSub:'yıl boyunca insani yardım ulaştırılan ülkeler',
+  countryIntroSub:'insani yardım faaliyeti', totalAid:'TOPLAM YARDIM',
+  totalLine:(n,y,a,b)=>`${n} operasyon · ${y} farklı yıl · ${a}–${b}`,
+  popCat:'Kategori:', popAid:'Yardım:', popHist:'Ülke Geçmişi →', cash:'Nakdi destek', total:'(toplam)',
+  netSub:(c,o)=>`${c} ÜLKE · ${o} OPERASYON`, netTitle:"TÜRKİYE'DEN DÜNYAYA", netTop:'EN ÇOK OPERASYON', netTime:'2010–2026',
+  detailSub:(a,b,n)=>`${a}–${b} · ${n} operasyon`,
+  recAlert:"Açılacak pencerede 'Bu Sekmeyi (This Tab)' seçip 'Paylaş'a tıklayın. En akıcı kayıt için tarayıcıyı tam ekran yapın (F11) ve diğer sekmeleri kapatın. Seçili yıl otomatik oynatılıp video olarak indirilecektir.",
+  recText:'KAYDEDİLİYOR · ', recFmtAuto:'Kayıt: Otomatik (önerilen)', recFmtVp8:'Kayıt: WebM VP8 (hafif)', recFmtVp9:'Kayıt: WebM VP9 (kaliteli, ağır)',
+  cat:{deprem:'Deprem / Yanardağ', sel:'Sel / Kasırga / Aşırı Hava', catisma:'Çatışma / İnsani Kriz', saglik:'Sağlık', gida:'Gıda / Kuraklık', yangin:'Orman Yangını', diger:'Genel İnsani Destek'},
+  chip:{tent:'Çadır',bed:'Battaniye · Yatak',food:'Gıda',health:'Sağlık',hyg:'Hijyen',shelter:'Barınma',water:'Su',fire:'Yangın müdahalesi',team:'Ekip · Arama-kurtarma',gen:'Jeneratör',cloth:'Giyim',cash:'Nakdi destek',pack:'Yardım'},
+  unit:{}
+ },
+ en:{
+  brandMain:'INTERNATIONAL HUMANITARIAN AID', brandSub:'2010–2026 · Cinematic Presentation Panel',
+  yearL:'Year', opsL:'Operations', countriesL:'Countries', typesL:'Aid Types', yearsL:'Years',
+  catL:'Category:', all:'All', tempoSlow:'Pace: Slow', tempoNormal:'Pace: Normal', tempoFast:'Pace: Fast',
+  byYear:'BY YEAR', byCountry:'BY COUNTRY',
+  playYear:'▶ Play Selected Year', playAll:'🎬 Play 2010 → 2026', recYear:'🎥 Record This Year',
+  pickCountry:'Select a country…', yearAll:'Year: All years', yearPick:'Year: ', recCountry:'🎥 Record Country', playCountry:'▶ Play Country', playAllCountries:'🧭 All Countries (A→Z)', network:'🌐 Show Full 16-Year Network',
+  soundOff:'🔊 Sound: Off', soundOn:'🔊 Sound: On', stopBtn:'⏹ Stop (Esc)', pickFirst:'Please select a country first.',
+  spHead:'REGIONAL ANALYSIS', spSub:'Aid distribution and operations list', opsHead:'Operations', opsCount:'operations',
+  noRec:'No records for this year and filter.', chartTitle:'Operations by category',
+  cineBrand:'AFAD · INTERNATIONAL HUMANITARIAN AID', opOf:'OPERATION', cumLabel:'CUMULATIVE IMPACT', cumLabelY:'CUMULATIVE IMPACT · SINCE 2010', cumC:'COUNTRIES', cumO:'OPERATIONS',
+  route:'TÜRKİYE →', yearIntroSub:'countries reached by aid', allIntroSub:'years of humanitarian aid reaching countries',
+  countryIntroSub:'humanitarian aid story', totalAid:'TOTAL AID',
+  totalLine:(n,y,a,b)=>`${n} operations · ${y} different years · ${a}–${b}`,
+  popCat:'Category:', popAid:'Aid:', popHist:'Country history →', cash:'Cash support', total:'(total)',
+  netSub:(c,o)=>`${c} COUNTRIES · ${o} OPERATIONS`, netTitle:'FROM TÜRKİYE TO THE WORLD', netTop:'MOST OPERATIONS', netTime:'2010–2026',
+  detailSub:(a,b,n)=>`${a}–${b} · ${n} operations`,
+  recAlert:"In the window that opens, choose 'This Tab' and click 'Share'. The selected year will play automatically and download as a video.",
+  recText:'RECORDING · ', recFmtAuto:'Format: Auto (recommended)', recFmtVp8:'Format: WebM VP8 (light)', recFmtVp9:'Format: WebM VP9 (quality, heavy)',
+  cat:{deprem:'Earthquake / Volcano', sel:'Flood / Storm / Extreme Weather', catisma:'Conflict / Humanitarian Crisis', saglik:'Health', gida:'Food / Drought', yangin:'Forest Fire', diger:'General Humanitarian Support'},
+  chip:{tent:'Tents',bed:'Blankets · Beds',food:'Food',health:'Health',hyg:'Hygiene',shelter:'Shelter',water:'Water',fire:'Firefighting',team:'Teams · Search & rescue',gen:'Generators',cloth:'Clothing',cash:'Cash support',pack:'Aid'},
+  unit:{'ton':'tons','ton un':'tons of flour','ton şeker':'tons of sugar','ton tıbbi':'tons of medical supplies','koli':'food parcels','çadır':'tents','gıda paketi':'food packages',
+    'hijyen koli':'hygiene parcels','hijyen paketi':'hygiene packs','bambu ev':'bamboo shelters','tuvalet/banyo':'toilets & showers','poliklinik':'clinic visits','helikopter':'helicopters',
+    'uçak':'aircraft','adet':'items','operasyon':'operation','yardım':'aid','konteyner ev':'container homes','araç':'vehicles','aile barınak':'family shelters','yatak':'beds','kit':'kits',
+    'hijyen kit':'hygiene kits','kişi':'people','yaralı':'injured','tır':'trucks','konteyner':'containers','jeneratör':'generators','yatak/baza':'beds','aile':'families','maske':'masks',
+    'pompa':'pumps','sıcak yemek':'hot meals','konut':'homes','hava aracı':'aircraft','battaniye':'blankets','personel':'personnel','çuval':'sacks of rice','kurutma makinesi':'wall dryers'}
+ }
+};
+const t = k => (I18N[LANG][k] !== undefined ? I18N[LANG][k] : I18N.tr[k]);
+const LOC = () => LANG==='en' ? 'en-US' : 'tr-TR';
+const up = s => String(s).toLocaleUpperCase(LOC());
+const cn = c => LANG==='en' ? ((CINFO[c]||[])[0] || c) : c;
+const unitName = u => LANG==='en' ? (I18N.en.unit[u] || u) : u;
+const TYPE_COLOR = { deprem:'#ff4d67', sel:'#2fd0e0', catisma:'#f5b83d', saglik:'#5aa9ff', gida:'#4cd68a', yangin:'#ff8a4c', diger:'#b794f6' };
+const getColor = tp => TYPE_COLOR[tp] || '#aaa';
+const catName = tp => t('cat')[tp] || tp;
+const flagUrl = c => { const i=(CINFO[c]||[])[1]; return i ? `https://flagcdn.com/w160/${i}.png` : null; };
+const flagImg = (c,cls='flag') => { const u=flagUrl(c); return u ? `<img class="${cls}" src="${u}" alt="" onerror="this.remove()">` : ''; };
+
+/* ── yardım bilgisi yardımcıları ── */
+const isCash = d => d.u === 'USD' || d.u === 'TL';
+const fmt = n => Number.isInteger(n) ? n.toLocaleString(LOC()) : n.toLocaleString(LOC(),{maximumFractionDigits:1});
+function metricOf(d){
+  if(isCash(d)) return null;
+  if(d.amt <= 1 && ['yardım','operasyon'].includes(d.u)) return null;
+  const total = /Kümülatif|Toplam/i.test(d.desc);
+  return { n:d.amt, u:unitName(d.u) + (total ? ' ' + t('total') : '') };
+}
+function transportOf(d){
+  const s = d.desc.toLowerCase();
+  if(/gemi/.test(s)) return 'ship';
+  if(/tren/.test(s)) return 'train';
+  if(/\btır\b|tırlar|tırla/.test(s) || d.u === 'tır') return 'truck';
+  return 'plane';
+}
+const CHIP_RULES = [
+  [/çadır/i,'🏕️','tent'],[/battaniye|yatak|uyku/i,'🛏️','bed'],
+  [/gıda|koli|\bun\b|pirinç|şeker|ekmek|makarna|yemek|iftar/i,'🍞','food'],
+  [/ilaç|tıbbi|hastane|poliklinik|sağlık|ameliyat|ambulans|klinik|protez|kolera|maske/i,'🏥','health'],
+  [/hijyen|temizlik|tuvalet|banyo/i,'🧼','hyg'],[/konteyner|bambu ev|barınak|barınma|konut/i,'🏠','shelter'],
+  [/\bsu\b|kuyu|pompa|içme suyu/i,'💧','water'],[/yangın|helikopter|söndürme/i,'🔥','fire'],
+  [/arama|kurtarma|personel|ekibi|ekip|tahliye|\bAK\b/i,'🧑‍🚒','team'],[/jeneratör/i,'⚡','gen'],
+  [/giyim|giysi|elbise/i,'👕','cloth'],[/nakdi/i,'🤝','cash']
+];
+function chipsOf(d, max=4){
+  const out=[];
+  for(const [re,ic,key] of CHIP_RULES){ if(re.test(d.desc) || (key==='cash' && isCash(d))) out.push({ic,key}); if(out.length>=max) break; }
+  if(!out.length) out.push({ic:'📦',key:'pack'});
+  return out;
+}
+const BIG = ['Çin','Rusya','Brezilya','Arjantin','Sudan','Kongo Cumhuriyeti','Demokratik Kongo Cumhuriyeti','Çad','Libya','Moğolistan','Nijer','Şili','Mısır'];
+const SMALL = ['Arnavutluk','Bosna Hersek','Filistin','Lübnan','Cibuti','Burundi','Gambiya','Kosova','Fiji','Moldova','Hırvatistan','Bulgaristan','El Salvador','Haiti','Tacikistan','Sırbistan','Karayipler','Vanuatu','Malavi','Sri Lanka','Nepal','Liberya','Sierra Leone','Kamboçya','Küba','Zambiya','Yunanistan','İsrail','Kırgızistan'];
+const zoomFor = c => BIG.includes(c) ? 3.8 : SMALL.includes(c) ? 6.2 : 4.8;
+
+/* ═════════ 3. SES EFEKTLERİ (Web Audio, dış dosya yok) ═════════ */
+const SFX = {
+  ctx:null, on:false,
+  init(){ if(!this.ctx){ const A=window.AudioContext||window.webkitAudioContext; if(!A) return false; this.ctx=new A(); } if(this.ctx.state==='suspended') this.ctx.resume(); return true; },
+  env(g,t0,a,d,peak){ g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(peak,t0+a); g.gain.exponentialRampToValueAtTime(0.0001,t0+a+d); },
+  whoosh(){
+    if(!this.on||!this.init()) return; const c=this.ctx, t0=c.currentTime, dur=1.0;
+    const buf=c.createBuffer(1,Math.floor(c.sampleRate*dur),c.sampleRate), data=buf.getChannelData(0); for(let i=0;i<data.length;i++) data[i]=Math.random()*2-1;
+    const src=c.createBufferSource(); src.buffer=buf;
+    const f=c.createBiquadFilter(); f.type='bandpass'; f.Q.value=1.4; f.frequency.setValueAtTime(250,t0); f.frequency.exponentialRampToValueAtTime(3200,t0+.55); f.frequency.exponentialRampToValueAtTime(500,t0+dur);
+    const g=c.createGain(); this.env(g,t0,.35,.62,.2); src.connect(f); f.connect(g); g.connect(c.destination); src.start(t0); src.stop(t0+dur);
+  },
+  tick(){
+    if(!this.on||!this.init()) return; const c=this.ctx, t0=c.currentTime, o=c.createOscillator(), g=c.createGain();
+    o.type='triangle'; o.frequency.value=1500; this.env(g,t0,.003,.035,.045); o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0+.06);
+  },
+  ping(){
+    if(!this.on||!this.init()) return; const c=this.ctx, t0=c.currentTime;
+    [[960,.16],[1440,.06]].forEach(([fr,pk])=>{ const o=c.createOscillator(), g=c.createGain(); o.type='sine'; o.frequency.setValueAtTime(fr,t0); this.env(g,t0,.01,1.1,pk); o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0+1.2); });
+  }
+};
+function toggleSound(){ SFX.on=!SFX.on; if(SFX.on){ SFX.init(); SFX.ping(); } applyLang(); }
+
+/* ═════════ 4. HARİTA ═════════ */
+const darkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap · © CARTO'});
+const gStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&hl=tr&x={x}&y={y}&z={z}',{maxZoom:20,subdomains:['mt0','mt1','mt2','mt3'],attribution:'© Google Maps'});
+const gHybrid  = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&hl=tr&x={x}&y={y}&z={z}',{maxZoom:20,subdomains:['mt0','mt1','mt2','mt3'],attribution:'© Google Maps'});
+const map = L.map('map',{zoomControl:false,zoomSnap:0.25,zoomDelta:0.5,layers:[darkMap]}).setView([25,25],2.4);
+L.control.layers({'Koyu Harita / Dark':darkMap,'Google Harita':gStreets,'Google Uydu':gHybrid},null,{position:'topright'}).addTo(map);
+L.control.zoom({position:'topright'}).addTo(map);
+L.marker(TR,{interactive:false,zIndexOffset:900,icon:L.divIcon({className:'',iconSize:[0,0],html:'<div class="trdot"></div><div class="tr-label">TÜRKİYE</div>'})}).addTo(map);
+const markersLayer = L.layerGroup().addTo(map);
+const cineLayer = L.layerGroup().addTo(map);
+
+/* ═════════ 5. NORMAL MOD ═════════ */
+function metricText(d){ const m=metricOf(d); return m ? `${fmt(m.n)} ${m.u}` : (isCash(d) ? t('cash') : ''); }
+function updateMap(items){
+  markersLayer.clearLayers();
+  items.forEach(d=>{
+    const col=getColor(d.t), c=L.circleMarker([d.lat,d.lng],{radius:11,fillColor:col,color:'#fff',weight:2,fillOpacity:.9}), mt=metricText(d);
+    c.bindPopup(`<div class="cpop"><h4>${cn(d.c)} (${d.y})</h4><p><b>${t('popCat')}</b> ${catName(d.t)}</p>${mt?`<p><b>${t('popAid')}</b> ${mt}</p>`:''}<p>${d.desc}</p><button class="cpop-btn" onclick="openDetail('${d.c}')">${t('popHist')}</button></div>`);
+    markersLayer.addLayer(c);
+  });
+}
+let aidChart;
+function initChart(){
+  aidChart = new Chart(document.getElementById('aidChart').getContext('2d'),{type:'bar',
+    data:{labels:[],datasets:[{label:'',data:[],backgroundColor:['#C8102E','#0E6B74','#C9962A','#2A6AAD','#1A6B3A','#D05020','#7B5CC8'],borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:'',font:{size:11}}},
+      scales:{y:{beginAtZero:true,ticks:{precision:0,font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}},animation:{duration:350}}});
+}
+function updateChart(items){
+  const g={}; items.forEach(d=>{ g[d.t]=(g[d.t]||0)+1; });
+  const e=Object.entries(g).sort((a,b)=>b[1]-a[1]);
+  aidChart.data.labels=e.map(x=>catName(x[0])); aidChart.data.datasets[0].data=e.map(x=>x[1]);
+  aidChart.options.plugins.title.text=t('chartTitle'); aidChart.update();
+}
+function renderEvents(items){
+  const el=document.getElementById('evList');
+  document.getElementById('evCount').textContent=items.length+' '+t('opsCount');
+  if(!items.length){ el.innerHTML=`<div class="ev-empty">${t('noRec')}</div>`; return; }
+  el.innerHTML=items.map((d,i)=>{ const mt=metricText(d);
+    return `<div class="ev-card" onclick="focusOp(${i})"><div class="ev-title">${cn(d.c)} <span style="font-weight:400;font-size:11px;color:#9A9590">(${d.y})</span></div><div class="ev-desc">${d.desc}</div><span class="ev-tag tc-${d.t}">${catName(d.t)}${mt?' · '+mt:''}</span></div>`; }).join('');
+}
+const itemsOf=(year,filter='all')=>DB.filter(d=>d.y===year&&(filter==='all'||d.t===filter));
+const stats=items=>({ops:items.length,countries:new Set(items.map(d=>d.c)).size,types:new Set(items.map(d=>d.t)).size});
+function render(){
+  const items=itemsOf(S.year,S.filter); S.cur=items; const st=stats(items);
+  document.getElementById('st-year').textContent=S.year; document.getElementById('st-ops').textContent=st.ops;
+  document.getElementById('st-ulke').textContent=st.countries; document.getElementById('st-tur').textContent=st.types;
+  document.getElementById('pYear').textContent=S.year;
+  updateMap(items); updateChart(items); renderEvents(items);
+  document.querySelectorAll('.y-chip').forEach(c=>c.classList.toggle('active',+c.dataset.y===S.year));
+}
+function focusOp(i){
+  const d=S.cur[i]; if(!d) return; map.flyTo([d.lat,d.lng],5,{duration:1.1});
+  markersLayer.eachLayer(l=>{ const ll=l.getLatLng(); if(ll.lat===d.lat&&ll.lng===d.lng) l.openPopup(); });
+}
+const yc=document.getElementById('yearChips');
+for(let y=2010;y<=2026;y++){
+  const b=document.createElement('button'); b.className='y-chip'; b.dataset.y=y; b.textContent=y;
+  b.onclick=()=>{ stopTour(); S.year=y; render(); map.flyTo([25,25],2.4,{duration:.8}); }; yc.appendChild(b);
+}
+document.querySelectorAll('.filter-btn').forEach(b=>b.addEventListener('click',()=>{
+  stopTour(); document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); S.filter=b.dataset.f; render();
+}));
+document.getElementById('speedSel').addEventListener('change',e=>{ S.speed=+e.target.value; });
+
+/* ── dil uygulama ── */
+const FILTER_ICON={all:'',deprem:'⚠ ',sel:'🌊 ',catisma:'🕊 ',saglik:'🏥 ',yangin:'🔥 ',gida:'🌾 ',diger:'🤝 '};
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=t(el.dataset.i18n); });
+  document.getElementById('brandH1').innerHTML=`AFAD <span>${t('brandMain')}</span>`;
+  document.getElementById('brandSub').textContent=t('brandSub');
+  document.querySelectorAll('.filter-btn').forEach(b=>{ b.textContent=FILTER_ICON[b.dataset.f]+(b.dataset.f==='all'?t('all'):catName(b.dataset.f)); });
+  document.getElementById('sndBtn').textContent=SFX.on?t('soundOn'):t('soundOff'); document.getElementById('sndBtn').classList.toggle('on',SFX.on);
+  document.getElementById('stopBtn').textContent=t('stopBtn');
+  document.getElementById('cineBrand').textContent=t('cineBrand');
+  document.getElementById('ccCl').textContent=t('cumC'); document.getElementById('ccOl').textContent=t('cumO');
+  document.getElementById('langTR').classList.toggle('on',LANG==='tr'); document.getElementById('langEN').classList.toggle('on',LANG==='en');
+  const sel=document.getElementById('countrySel'), cur=sel.value;
+  const names=[...new Set(DB.map(d=>d.c))].sort((a,b)=>cn(a).localeCompare(cn(b),LOC()));
+  sel.innerHTML=`<option value="">${t('pickCountry')}</option>`+names.map(c=>`<option value="${c}">${cn(c)}</option>`).join(''); sel.value=cur;
+  fillCountryYears(document.getElementById('countryYearSel').value);
+  if(aidChart) render();
+}
+function setLang(l){ LANG=l; applyLang(); }
+
+/* ═════════ 6. SİNEMATİK MOTOR ═════════ */
+class Abort extends Error {}
+const sleep = ms => new Promise((res,rej)=>{
+  let left=ms/S.speed; const step=80;
+  (function tick(){ if(S.abort) return rej(new Abort()); if(left<=0) return res(); const w=Math.min(step,left); left-=w; setTimeout(tick,w); })();
+});
+const ease = p => p<.5 ? 4*p*p*p : 1-Math.pow(-2*p+2,3)/2;
+function animate(ms, fn){
+  return new Promise((res,rej)=>{
+    const t0=performance.now(), dur=ms/S.speed;
+    (function f(now){
+      try{ if(S.abort) return rej(new Abort()); const p=Math.max(0,Math.min(1,(now-t0)/dur)); fn(p); p<1?requestAnimationFrame(f):res(); }catch(e){ rej(e); }
+    })(t0);
+  });
+}
+function countTo(el, to, ms, sound=true){
+  const int=Number.isInteger(to); let last=0;
+  return animate(ms,p=>{ const v=to*ease(p); el.textContent=fmt(int?Math.round(v):Math.round(v*10)/10);
+    const now=performance.now(); if(sound && p<1 && now-last>75){ SFX.tick(); last=now; } }).then(()=>{ el.textContent=fmt(to); });
+}
+
+/* araç ikonları */
+const VEH = {
+  plane:c=>`<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="rgba(11,18,32,.75)" stroke="${c}" stroke-width="3"/><path fill="#fff" d="M50 31.5c0-1.7-1.6-3-3.5-3H37L28 17h-4l4.5 11.5H19l-3-4.5h-3l2 8-2 8h3l3-4.5h9.5L24 46h4l9-11.5h9.5c1.9 0 3.5-1.3 3.5-3z"/></svg>`,
+  ship:c=>`<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="rgba(11,18,32,.75)" stroke="${c}" stroke-width="3"/><path fill="#fff" d="M14 35h36l-5 9H19z"/><rect x="24" y="26" width="16" height="8" fill="#fff"/><rect x="29" y="20" width="6" height="6" fill="#fff"/><rect x="36" y="28" width="3" height="3" fill="#0b1220"/><rect x="29" y="28" width="3" height="3" fill="#0b1220"/></svg>`,
+  train:c=>`<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="rgba(11,18,32,.75)" stroke="${c}" stroke-width="3"/><rect x="14" y="24" width="14" height="14" rx="2" fill="#fff"/><rect x="30" y="24" width="14" height="14" rx="2" fill="#fff"/><path fill="#fff" d="M46 24h4l3 8v6H46z"/><circle cx="20" cy="41" r="2.6" fill="#fff"/><circle cx="36" cy="41" r="2.6" fill="#fff"/><circle cx="48" cy="41" r="2.6" fill="#fff"/></svg>`,
+  truck:c=>`<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="rgba(11,18,32,.75)" stroke="${c}" stroke-width="3"/><rect x="13" y="22" width="24" height="16" rx="2" fill="#fff"/><path fill="#fff" d="M39 27h7l5 6v5H39z"/><circle cx="21" cy="41" r="3.4" fill="#fff" stroke="#0b1220" stroke-width="1.4"/><circle cx="44" cy="41" r="3.4" fill="#fff" stroke="#0b1220" stroke-width="1.4"/></svg>`
+};
+const vehIcon=(m,c)=>L.divIcon({className:'',iconSize:[0,0],html:`<div class="veh"><div class="vi" style="width:52px;height:52px">${VEH[m](c)}</div></div>`});
+const rippleIcon=c=>L.divIcon({className:'',iconSize:[0,0],html:`<div class="ripple" style="--rc:${c}"><span></span><span></span><span></span><i></i></div>`});
+const labelIcon=n=>L.divIcon({className:'',iconSize:[0,0],html:`<div class="dest-label">${up(n)}</div>`});
+
+function bezier(a,b,n=90){
+  const dlat=b[0]-a[0], dlng=b[1]-a[1], dist=Math.hypot(dlat,dlng)||1;
+  let px=-dlng/dist, py=dlat/dist; if(px<0){ px=-px; py=-py; }
+  const k=dist*.22, cx=(a[0]+b[0])/2+px*k, cy=(a[1]+b[1])/2+py*k, pts=[];
+  for(let i=0;i<=n;i++){ const tt=i/n,u=1-tt; pts.push([u*u*a[0]+2*u*tt*cx+tt*tt*b[0], u*u*a[1]+2*u*tt*cy+tt*tt*b[1]]); }
+  return pts;
+}
+
+/* ülke sınırı parlatma (GeoJSON) */
+function glowCountry(c, col, opacity=.32){
+  const info=CINFO[c]; const g=info && GEO[info[2]]; if(!g) return null;
+  const lyr=L.geoJSON({type:'Feature',geometry:g},{interactive:false,style:{color:col,weight:2.5,fillColor:col,fillOpacity:0,opacity:.95,className:'geo-glow'}}).addTo(cineLayer);
+  animate(1000,p=>lyr.setStyle({fillOpacity:opacity*ease(p)})).catch(()=>{});
+  return lyr;
+}
+
+/* HUD */
+function buildTimeline(){
+  const el=document.getElementById('cineTimeline'); el.innerHTML='';
+  for(let y=2010;y<=2026;y++){ const s=document.createElement('span'); s.className='tl-y'; s.id='tl-'+y; s.textContent=y; el.appendChild(s); }
+}
+function setYearText(txt){
+  const ye=document.getElementById('cineYear');
+  if(ye.textContent!=String(txt)){ ye.textContent=txt; ye.classList.remove('tick'); void ye.offsetWidth; ye.classList.add('tick'); }
+}
+function setHud(year, idx, n){
+  setYearText(year);
+  document.getElementById('cineCount').textContent = n ? `${t('opOf')} ${idx+1} / ${n}` : '';
+  for(let y=2010;y<=2026;y++){ document.getElementById('tl-'+y).className='tl-y'+(y<year?' done':'')+(y===year?' now':''); }
+}
+function setHudCountry(es, idx, name){
+  const d=es[idx], yrs=new Set(es.map(e=>e.y)); setYearText(d.y);
+  document.getElementById('cineCount').textContent=`${up(cn(name))} · ${idx+1} / ${es.length}`;
+  for(let y=2010;y<=2026;y++){ document.getElementById('tl-'+y).className='tl-y'+(yrs.has(y)?' has':'')+(yrs.has(y)&&y<d.y?' done':'')+(y===d.y?' now':''); }
+}
+/* kümülatif etki */
+function cumRender(bump){
+  const o=S.cum.o, c=S.cum.c.size;
+  const eC=document.getElementById('ccC'), eO=document.getElementById('ccO');
+  if(eC.textContent!=String(c)||eO.textContent!=String(o)){
+    eC.textContent=c; eO.textContent=o;
+    if(bump){ [eC,eO].forEach(e=>{ e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); }); }
+  }
+  document.getElementById('ccBar').style.width=Math.min(100,o/DB.length*100)+'%';
+}
+function cumReset(label){ S.cum={c:new Set(),o:0}; document.getElementById('ccLabel').textContent=label; cumRender(false); }
+function cumBase(year){ S.cum={c:new Set(),o:0}; DB.forEach(d=>{ if(d.y<year){ S.cum.c.add(d.c); S.cum.o++; } }); document.getElementById('ccLabel').textContent=t('cumLabelY'); cumRender(false); }
+function cumAdd(d){ S.cum.c.add(d.c); S.cum.o++; cumRender(true); }
+
+/* bilgi kartı */
+function fillCard(d){
+  const col=getColor(d.t), tag=document.getElementById('acTag');
+  tag.textContent=catName(d.t); tag.style.background=col;
+  document.getElementById('aidCard').style.borderLeftColor=col;
+  document.getElementById('acRoute').textContent=t('route');
+  const nm=up(cn(d.c)), an=document.getElementById('acName');
+  an.innerHTML=flagImg(d.c)+`<span>${nm}</span>`; an.style.fontSize=nm.length>11?'64px':'84px';
+  const m=metricOf(d), box=document.getElementById('acMetric');
+  document.getElementById('acTotals').innerHTML='';
+  if(m){ document.getElementById('acNum').textContent='0'; document.getElementById('acUnit').textContent=m.u; box.style.display='flex'; } else box.style.display='none';
+  document.getElementById('acChips').innerHTML=chipsOf(d).map((c,i)=>`<span class="chip" style="animation-delay:${.55+i*.16}s"><i>${c.ic}</i>${t('chip')[c.key]}</span>`).join('');
+  document.getElementById('acDesc').textContent=d.desc;
+}
+async function showCard(d){
+  const card=document.getElementById('aidCard');
+  card.classList.remove('out','show'); fillCard(d); void card.offsetWidth; card.classList.add('show');
+  const m=metricOf(d); if(m) await countTo(document.getElementById('acNum'),m.n,1500);
+}
+async function hideCard(){
+  const card=document.getElementById('aidCard');
+  if(!card.classList.contains('show')) return;
+  card.classList.add('out'); await sleep(380); card.classList.remove('show','out');
+}
+
+/* tek operasyon  (opt.mode: 'year' | 'country', opt.first) */
+async function playOp(d, idx, n, prev, opt={}){
+  const country=opt.mode==='country', first=!!opt.first;
+  await hideCard();
+  const col=getColor(d.t), dest=[d.lat,d.lng], mode=transportOf(d);
+  prev.forEach(p=>{ p.trail.setStyle({weight:2.5,opacity:.4}); if(p.ghost&&!country) p.ghost.setStyle({opacity:.12}); if(p.geo&&!country) p.geo.setStyle({fillOpacity:.1,weight:1.2}); });
+
+  if(country && !first){
+    if(opt.rip) cineLayer.removeLayer(opt.rip); if(opt.geo) cineLayer.removeLayer(opt.geo);
+    opt.rip=L.marker(dest,{icon:rippleIcon(col),interactive:false,zIndexOffset:800}).addTo(cineLayer);
+    opt.geo=glowCountry(d.c,col,.34);
+    SFX.whoosh(); SFX.ping(); cumAdd(d);
+    await sleep(800); await showCard(d); await sleep(3000);
+    return;
+  }
+  if(!country || first){
+    map.flyToBounds(L.latLngBounds([TR,dest]),{paddingTopLeft:[90,230],paddingBottomRight:[90,330],maxZoom:5,duration:1.6});
+    await sleep(1000);
+  }
+  const pts=bezier(TR,dest);
+  let ghost=opt.ghost;
+  if(!ghost){ ghost=L.polyline(pts,{color:col,weight:2,opacity:.3,dashArray:'4 9'}).addTo(cineLayer); opt.ghost=ghost; }
+  const trail=L.polyline([pts[0]],{color:col,weight:5,opacity:.95,lineCap:'round'}).addTo(cineLayer);
+  const veh=L.marker(pts[0],{icon:vehIcon(mode,col),interactive:false,zIndexOffset:1200}).addTo(cineLayer);
+  SFX.whoosh();
+  await animate(country&&!first?1500:2500,p=>{
+    const i=Math.max(0,Math.min(pts.length-2,Math.floor(ease(p)*(pts.length-1))));
+    trail.setLatLngs(pts.slice(0,i+2)); veh.setLatLng(pts[i+1]);
+    const a=pts[i], b=pts[i+1], el=veh.getElement()&&veh.getElement().querySelector('.vi');
+    if(el){ const ang=Math.atan2(-(b[0]-a[0]),(b[1]-a[1])*Math.cos(a[0]*Math.PI/180))*180/Math.PI;
+      el.style.transform = mode==='plane' ? `rotate(${ang}deg)` : (b[1]<a[1] ? 'scaleX(-1)' : 'none'); }
+  });
+  cineLayer.removeLayer(veh);
+
+  // varış
+  if(country && opt.rip) cineLayer.removeLayer(opt.rip);
+  if(country && opt.geo) cineLayer.removeLayer(opt.geo);
+  const rip=L.marker(dest,{icon:rippleIcon(col),interactive:false,zIndexOffset:800}).addTo(cineLayer);
+  const geo=glowCountry(d.c,col);
+  let lab=opt.lab; if(!lab){ lab=L.marker(dest,{icon:labelIcon(cn(d.c)),interactive:false,zIndexOffset:1000}).addTo(cineLayer); if(country) opt.lab=lab; }
+  opt.rip=rip; opt.geo=geo;
+  SFX.ping(); cumAdd(d);
+  map.flyTo(dest,zoomFor(d.c),{duration:1.9});
+  await sleep(500);
+  await showCard(d);
+  await sleep(country?3000:3400);
+  if(!country) cineLayer.removeLayer(lab);
+  prev.push({trail,ghost,rip,geo});
+}
+
+/* geçiş ekranı */
+async function wipeIn(){
+  const el=document.getElementById('yearIntro'); el.classList.remove('out'); el.classList.add('on'); void el.offsetWidth; el.classList.add('in'); SFX.whoosh(); await sleep(950);
+}
+async function wipeOut(){
+  const el=document.getElementById('yearIntro'), inner=document.getElementById('yiInner');
+  inner.classList.remove('show'); await sleep(450);
+  el.classList.add('out'); SFX.whoosh(); await sleep(1000);
+  el.querySelectorAll('.yi-wipe').forEach(w=>w.style.transition='none');
+  el.classList.remove('on','in','out'); void el.offsetWidth;
+  el.querySelectorAll('.yi-wipe').forEach(w=>w.style.transition='');
+}
+/* chips: [{label, country?}]   stats: 3 × {n,l} */
+async function introCard({title, size=230, sub, chips=[], stats, flag, hold}){
+  const inner=document.getElementById('yiInner');
+  const yy=document.getElementById('yiYear'); yy.style.fontSize=size+'px';
+  yy.innerHTML=[...title].map((ch,i)=>`<span style="animation-delay:${.15+i*.08}s">${ch===' '?'&nbsp;':ch}</span>`).join('');
+  const fl=document.getElementById('yiFlag'); fl.style.display=flag?'block':'none'; fl.innerHTML=flag?flagImg(flag,''):'';
+  document.getElementById('yiBadge').textContent=t('cineBrand');
+  document.getElementById('yiSub').textContent=sub;
+  document.getElementById('yiCountries').innerHTML=chips.map((c,i)=>`<span class="yi-c" style="animation-delay:${.7+i*.09}s">${c.country?flagImg(c.country,'flag-s'):''}${c.label}</span>`).join('');
+  [['yiA',0],['yiB',1],['yiC',2]].forEach(([id,i])=>{ document.getElementById(id).textContent='0'; document.getElementById(id+'l').textContent=stats[i].l; });
+  await wipeIn();
+  inner.classList.remove('show'); void inner.offsetWidth; inner.classList.add('show');
+  await Promise.all([['yiA',0],['yiB',1],['yiC',2]].map(([id,i])=>countTo(document.getElementById(id),stats[i].n,1400,i===0)));
+  await sleep(hold);
+}
+
+/* ── YIL BAZLI ── */
+async function runYear(year, {withIntro=true}={}){
+  S.year=year; render();
+  const items=itemsOf(year,'all'); cineLayer.clearLayers();
+  const st=stats(items), names=[...new Set(items.map(d=>d.c))];
+  setHud(year,0,0); cumBase(year);
+  if(withIntro){
+    await introCard({title:String(year), sub:t('yearIntroSub'), chips:names.map(c=>({label:up(cn(c)),country:c})),
+      stats:[{n:st.ops,l:t('opsL')},{n:st.countries,l:t('countriesL')},{n:st.types,l:t('typesL')}], hold:Math.min(3200+names.length*120,5200)});
+    map.setView([28,28],2.4,{animate:false});
+    await wipeOut();
+  }
+  await sleep(500);
+  const prev=[];
+  for(let i=0;i<items.length;i++){ setHud(year,i,items.length); await playOp(items[i],i,items.length,prev,{mode:'year'}); }
+  await hideCard();
+  map.flyTo([28,28],2.4,{duration:1.6}); await sleep(1700);
+}
+
+/* ── ÜLKE BAZLI ── */
+const entriesOf = name => DB.filter(d=>d.c===name).sort((a,b)=>a.y-b.y||a.id-b.id);
+function totalsOf(es){
+  const fam=(u)=> /^ton/.test(u)?'ton' : ['koli','gıda paketi','hijyen koli','hijyen paketi','kit'].includes(u)?'koli' : u==='çadır'?'çadır' : ['bambu ev','konteyner ev','konut','aile barınak'].includes(u)?'barınak' : u==='poliklinik'?'poliklinik' : null;
+  const sums={}, cumMax={};
+  es.forEach(d=>{ const f=fam(d.u); if(!f||isCash(d)) return; if(/Kümülatif|Toplam/i.test(d.desc)) cumMax[f]=Math.max(cumMax[f]||0,d.amt); else sums[f]=(sums[f]||0)+d.amt; });
+  const label={ton:LANG==='en'?'tons':'ton',koli:LANG==='en'?'parcels / packages':'koli / paket',çadır:LANG==='en'?'tents':'çadır',barınak:LANG==='en'?'shelters / homes':'barınak / konut',poliklinik:LANG==='en'?'clinic visits':'poliklinik'};
+  return Object.keys({...sums,...cumMax}).map(f=>({n:Math.max(sums[f]||0,cumMax[f]||0),u:label[f]}));
+}
+async function showSummary(name, es){
+  const card=document.getElementById('aidCard'), yrs=[...new Set(es.map(d=>d.y))];
+  card.classList.remove('out','show');
+  const tag=document.getElementById('acTag'); tag.textContent=t('totalAid'); tag.style.background='#ffd166';
+  card.style.borderLeftColor='#ffd166';
+  document.getElementById('acRoute').textContent=`${yrs[0]}–${yrs[yrs.length-1]}`;
+  const nm=up(cn(name)), an=document.getElementById('acName'); an.innerHTML=flagImg(name)+`<span>${nm}</span>`; an.style.fontSize=nm.length>11?'64px':'84px';
+  document.getElementById('acMetric').style.display='none';
+  const tot=SHOW_QTY_TOTALS?totalsOf(es):[];
+  document.getElementById('acTotals').innerHTML=tot.map(x=>`<div><b>${fmt(x.n)}</b><span>${x.u}</span></div>`).join('');
+  const freq={}; es.forEach(d=>chipsOf(d,6).forEach(c=>{ freq[c.key]=freq[c.key]||{ic:c.ic,key:c.key,n:0}; freq[c.key].n++; }));
+  const chips=Object.values(freq).sort((a,b)=>b.n-a.n).slice(0,6);
+  document.getElementById('acChips').innerHTML=chips.map((c,i)=>`<span class="chip" style="animation-delay:${.5+i*.14}s"><i>${c.ic}</i>${t('chip')[c.key]}</span>`).join('');
+  document.getElementById('acDesc').textContent=t('totalLine')(es.length,yrs.length,yrs[0],yrs[yrs.length-1]);
+  void card.offsetWidth; card.classList.add('show'); SFX.ping();
+  await sleep(4600);
+}
+async function runCountry(name, year='all'){
+  let es=entriesOf(name); if(year!=='all') es=es.filter(d=>d.y===+year); if(!es.length) return;
+  cineLayer.clearLayers();
+  const yrs=[...new Set(es.map(d=>d.y))], types=new Set(es.map(d=>d.t)), title=up(cn(name));
+  setHudCountry(es,0,name);
+  await introCard({title, size: title.length>22?70 : title.length>14?100 : title.length>9?135 : 170,
+    sub:`${t('countryIntroSub')} · ${yrs.length>1?yrs[0]+'–'+yrs[yrs.length-1]:yrs[0]}`, chips:yrs.map(y=>({label:String(y)})),
+    stats:[{n:es.length,l:t('opsL')},{n:yrs.length,l:t('yearsL')},{n:types.size,l:t('typesL')}], flag:name, hold:2200+yrs.length*90});
+  map.setView([28,28],2.4,{animate:false});
+  await wipeOut(); await sleep(300);
+  const prev=[], opt={mode:'country'};
+  for(let j=0;j<es.length;j++){ setHudCountry(es,j,name); opt.first=(j===0); await playOp(es[j],j,es.length,prev,opt); }
+  await hideCard();
+  if(year==='all'){ await showSummary(name,es); await hideCard(); }     // toplam özeti yalnızca 'tüm yıllar'da
+}
+
+/* ── oturum yönetimi ── */
+function enterCine(){ document.body.classList.add('cine'); buildTimeline(); setTimeout(()=>map.invalidateSize(),50); }
+function leaveCine(){
+  document.body.classList.remove('cine','net');
+  document.getElementById('aidCard').classList.remove('show','out');
+  document.getElementById('yearIntro').className='year-intro';
+  document.getElementById('yiInner').classList.remove('show');
+  cineLayer.clearLayers(); setTimeout(()=>map.invalidateSize(),50);
+}
+async function session(fn){
+  if(S.running) return; S.running=true; S.abort=false; enterCine();
+  try{ await sleep(700); map.setView([28,28],2.4,{animate:false}); await fn(); }
+  catch(e){ if(!(e instanceof Abort)) console.error(e); }
+  S.running=false; leaveCine(); render();
+}
+const playCinematicYear = y => session(async()=>{ await runYear(y); });
+const playAllYears = () => session(async()=>{
+  for(let y=2010;y<=2026;y++) await runYear(y);
+  const st=stats(DB);
+  await introCard({title:'2010–2026', size:200, sub:t('allIntroSub'), chips:[], stats:[{n:st.ops,l:t('opsL')},{n:st.countries,l:t('countriesL')},{n:st.types,l:t('typesL')}], hold:3200});
+  await wipeOut();
+});
+const allCountryNames = () => [...new Set(DB.map(d=>d.c))].sort((a,b)=>cn(a).localeCompare(cn(b),LOC()));
+const playCountry = (name, year='all') => session(async()=>{ cumReset(t('cumLabel')); await runCountry(name, year); });
+function selectedCountry(){ const v=document.getElementById('countrySel').value; if(!v){ alert(t('pickFirst')); return null; } return { name:v, year:document.getElementById('countryYearSel').value }; }
+function playCountryFromSel(){ const s=selectedCountry(); if(s) playCountry(s.name, s.year); }
+/* ülke seçilince yıl listesi o ülkenin yardım aldığı yıllarla dolar */
+function fillCountryYears(keep){
+  const c=document.getElementById('countrySel').value, ys=document.getElementById('countryYearSel');
+  const years=c ? [...new Set(entriesOf(c).map(d=>d.y))] : [];
+  ys.innerHTML=`<option value="all">${t('yearAll')}</option>`+years.map(y=>`<option value="${y}">${t('yearPick')}${y}</option>`).join('');
+  ys.value = (keep && years.includes(+keep)) ? keep : 'all';
+}
+document.getElementById('countrySel').addEventListener('change',()=>fillCountryYears());
+const playAllCountries = () => session(async()=>{
+  cumReset(t('cumLabel'));
+  for(const c of allCountryNames()) await runCountry(c);
+  const st=stats(DB);
+  await introCard({title:'2010–2026', size:200, sub:t('allIntroSub'), chips:[], stats:[{n:st.ops,l:t('opsL')},{n:st.countries,l:t('countriesL')},{n:st.types,l:t('typesL')}], hold:3200});
+  await wipeOut();
+});
+function stopTour(){ if(S.running) S.abort=true; }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') stopTour(); });
+
+/* ── 16 yıllık tüm ağ (yoğunluk modu) ── */
+async function showNetwork(){
+  if(S.running) return; S.running=true; S.abort=false; enterCine(); document.body.classList.add('net');
+  try{
+    await sleep(600); cineLayer.clearLayers();
+    const by={}; DB.forEach(d=>{ (by[d.c]=by[d.c]||[]).push(d); });
+    const list=Object.entries(by).map(([c,es])=>{
+      const cnt={}; es.forEach(e=>cnt[e.t]=(cnt[e.t]||0)+1);
+      const dom=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+      return {c,n:es.length,col:getColor(dom),pt:[es[0].lat,es[0].lng]};
+    }).sort((a,b)=>a.n-b.n);
+    const st=stats(DB);
+    setYearText(t('netTime')); document.getElementById('cineBrand').textContent=t('netTitle');
+    document.getElementById('netSub').textContent=t('netSub')(st.countries,st.ops);
+    const top=[...list].sort((a,b)=>b.n-a.n).slice(0,8), mx=top[0].n;
+    document.getElementById('netRank').innerHTML=`<div class="nr-h">${t('netTop')}</div>`+top.map(x=>`<div class="nr-row">${flagImg(x.c,'')}<span class="nm">${cn(x.c)}</span><span class="bar"><i style="width:${x.n/mx*100}%;background:${x.col}"></i></span><b>${x.n}</b></div>`).join('');
+    map.setView([24,45],2.25,{animate:false});
+    SFX.whoosh();
+    await Promise.all(list.map((x,i)=>sleep(i*95).then(async()=>{
+      const pts=bezier(TR,x.pt), w=Math.min(11,1.6+x.n*.62);
+      const line=L.polyline([pts[0]],{color:x.col,weight:w,opacity:Math.min(.95,.5+x.n*.04),lineCap:'round'}).addTo(cineLayer);
+      await animate(1300,p=>{ const k=Math.max(1,Math.floor(ease(p)*(pts.length-1))+1); line.setLatLngs(pts.slice(0,k)); });
+      L.circleMarker(x.pt,{radius:Math.min(16,5+x.n*.9),fillColor:x.col,color:'#fff',weight:2,fillOpacity:.95,interactive:false}).addTo(cineLayer);
+      glowCountry(x.c,x.col,.2);
+      if(x.n>=7) L.marker(x.pt,{icon:L.divIcon({className:'',iconSize:[0,0],html:`<div class="net-label">${up(cn(x.c))}<small>${x.n}</small></div>`}),interactive:false}).addTo(cineLayer);
+      if(x.n>=7) SFX.ping();
+    })));
+    await new Promise((_,rej)=>{ const iv=setInterval(()=>{ if(S.abort){ clearInterval(iv); rej(new Abort()); } },200); });   // Esc'e kadar bekle
+  }catch(e){ if(!(e instanceof Abort)) console.error(e); }
+  document.getElementById('cineBrand').textContent=t('cineBrand');
+  S.running=false; leaveCine(); render();
+}
+
+/* ═════════ 7. KAYIT (performans için optimize edilmiş) ═════════
+   • Codec önceliği: H.264/MP4 (donanım kodlayıcı) → VP8 → VP9 (yazılım kodlaması, en ağırı)
+   • 1080p / 30 fps sınırı + 5 Mbps  (eski: sınırsız çözünürlük + VP9 + 8 Mbps)
+   • rec.start(1000): veri her saniye parça parça alınır (kapanışta tek büyük yığılma olmaz)
+   • Kayıt sırasında ağır CSS efektleri kapanır (body.rec-perf), ısınma beklemesi ve içerik ipucu eklenir */
+const REC_PROFILES = {
+  auto:{ cands:[['video/mp4;codecs=avc1.640028','mp4',5e6],['video/mp4;codecs=avc1.4d0028','mp4',5e6],['video/mp4;codecs=avc1','mp4',5e6],
+                ['video/webm;codecs=h264','webm',5e6],['video/webm;codecs=vp8','webm',5e6],['video/webm;codecs=vp9','webm',5e6]] },
+  vp8: { cands:[['video/webm;codecs=vp8','webm',5e6],['video/webm;codecs=vp9','webm',5e6]] },
+  vp9: { cands:[['video/webm;codecs=vp9','webm',6e6],['video/webm;codecs=vp8','webm',5e6]] }
+};
+function pickRecorder(profile){
+  for(const [mime,ext,bps] of (REC_PROFILES[profile]||REC_PROFILES.auto).cands){ if(MediaRecorder.isTypeSupported(mime)) return {mime,ext,bps}; }
+  return {mime:'',ext:'webm',bps:5e6};
+}
+let screenStream=null;
+async function getCaptureStream(){
+  if(screenStream && screenStream.active) return screenStream;
+  alert(t('recAlert'));
+  const video = { width:{ideal:1920,max:1920}, height:{ideal:1080,max:1080}, frameRate:{ideal:30,max:30}, displaySurface:'browser' };
+  try{ screenStream = await navigator.mediaDevices.getDisplayMedia({video, audio:SFX.on, preferCurrentTab:true, selfBrowserSurface:'include'}); }
+  catch(e){ if(e && e.name==='NotAllowedError') throw e;
+            screenStream = await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30}, audio:SFX.on}); }   // eski tarayıcı yedeği
+  const vt = screenStream.getVideoTracks()[0];
+  try{ vt.contentHint='motion'; }catch(e){}                       // kodlayıcıya "akıcılık önemli" ipucu
+  vt.addEventListener('ended',()=>stopTour());                    // paylaşım durdurulursa anlatımı da durdur
+  return screenStream;
+}
+const wait = ms => new Promise(r=>setTimeout(r,ms));
+const slug = s => String(s).replace(/[çÇ]/g,'c').replace(/[ğĞ]/g,'g').replace(/[ıİ]/g,'i').replace(/[öÖ]/g,'o').replace(/[şŞ]/g,'s').replace(/[üÜ]/g,'u').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'');
+/* playFn: kaydı yapılacak oynatma  ·  fileBase: dosya adı gövdesi  ·  pillText: ekrandaki kayıt etiketi */
+async function recordSession(playFn, fileBase, pillText){
+  const prof = pickRecorder(document.getElementById('recFmt').value);
+  let rec=null; const chunks=[];
+  try{
+    const stream = await getCaptureStream();
+    document.getElementById('recPill').style.display='inline-flex';
+    document.getElementById('recStatusText').textContent=t('recText')+pillText;
+    const opts={videoBitsPerSecond:prof.bps}; if(prof.mime) opts.mimeType=prof.mime; if(stream.getAudioTracks().length) opts.audioBitsPerSecond=128000;
+    rec = new MediaRecorder(stream, opts);
+    rec.ondataavailable = e => { if(e.data && e.data.size>0) chunks.push(e.data); };
+    const done = new Promise(res=>{ rec.onstop = res; rec.onerror = res; });
+    document.body.classList.add('rec-perf');                      // ağır efektleri kapat
+    rec.start(1000);                                              // 1 sn'lik parçalar
+    await wait(900);                                              // kodlayıcı ısınsın
+    await playFn();
+    await wait(700);                                              // son kare kesilmesin
+    if(rec.state!=='inactive') rec.stop();
+    await done;
+    if(chunks.length){
+      const type = (prof.mime||'video/webm').split(';')[0];
+      const url = URL.createObjectURL(new Blob(chunks,{type}));
+      const a=document.createElement('a'); a.href=url; a.download=`${fileBase}.${prof.ext}`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000);
+    }
+  }catch(e){ console.error('Kayıt iptal:',e); try{ if(rec && rec.state!=='inactive') rec.stop(); }catch(_){} }
+  finally{
+    document.body.classList.remove('rec-perf'); document.getElementById('recPill').style.display='none';
+    if(screenStream){ screenStream.getTracks().forEach(x=>x.stop()); screenStream=null; }
+  }
+}
+function recordOneYearVideo(){ const y=S.year; return recordSession(()=>playCinematicYear(y), `AFAD_${y}_Uluslararasi_Yardimlar`, y); }
+function recordCountryVideo(){
+  const s=selectedCountry(); if(!s) return Promise.resolve();
+  const span = s.year==='all' ? '2010-2026' : s.year;
+  return recordSession(()=>playCountry(s.name, s.year), `AFAD_${slug(s.name)}_${span}_Uluslararasi_Yardimlar`, `${cn(s.name)} · ${span}`);
+}
+
+/* ═════════ 8. ÜLKE DETAYI ═════════ */
+function openDetail(country){
+  const es=entriesOf(country); if(!es.length) return;
+  document.getElementById('dmTitle').textContent=cn(country);
+  const types=[...new Set(es.map(d=>d.t))];
+  document.getElementById('dmSub').textContent=t('detailSub')(es[0].y,es[es.length-1].y,es.length);
+  document.getElementById('dmBody').innerHTML=`<div class="dm-tags">${types.map(x=>`<span class="dm-tag tc-${x}">${catName(x)}</span>`).join('')}</div>`+
+    es.map(d=>{ const mt=metricText(d); return `<div class="dm-entry"><div class="dm-year">${d.y} — ${catName(d.t)}</div><div class="dm-text">${d.desc}</div>${mt?`<div class="dm-amount">📦 ${mt}</div>`:''}</div>`; }).join('');
+  document.getElementById('detailModal').classList.add('open');
+}
+function closeDetail(){ document.getElementById('detailModal').classList.remove('open'); }
+document.getElementById('detailModal').addEventListener('click',e=>{ if(e.target.id==='detailModal') closeDetail(); });
+
+initChart(); applyLang(); render();
+</script>
+</body>
+</html>
